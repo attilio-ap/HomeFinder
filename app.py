@@ -84,7 +84,7 @@ if start_analysis:
     if not target_url and not manual_text:
         st.warning("Inserisci un URL o incolla il testo dell'annuncio per procedere.")
     else:
-        with st.spinner("L'Agente sta lavorando..."):
+        with st.status("Avvio dell'agente LangGraph...", expanded=True) as status:
             if manual_text:
                 # Salta il nodo scraper ed esegue i nodi successivi manualmente usando il testo fornito
                 state = {
@@ -93,16 +93,25 @@ if start_analysis:
                     "max_budget": max_budget
                 }
                 
+                st.write("✅ **Scraper:** Bypassato (testo manuale fornito).")
+                
                 # Node 1: Estrazione
                 state.update(data_extractor_node(state))
+                st.write("🧠 **AI Extractor:** Parametri e indirizzo strutturati.")
                 
                 # Se i vincoli hard sono soddisfatti, prosegue in parallelo (simulato) e poi valuta
                 if state.get("hard_constraints_met"):
                     state.update(commuter_node(state))
+                    st.write("🚗 **Google Maps:** Calcolo del pendolarismo completato.")
+                    
                     state.update(osint_node(state))
+                    st.write("🌍 **Tavily OSINT:** Analisi del quartiere completata.")
+                    
+                    st.write("✍️ **AI Evaluator:** Stesura del report finale in corso...")
                     state.update(evaluator_node(state))
                     
                 final_output = state
+                status.update(label="Analisi completata con successo!", state="complete", expanded=False)
             else:
                 # Avvia il grafo normalmente
                 initial_state = {
@@ -110,7 +119,30 @@ if start_analysis:
                     "user_office_address": user_office_address,
                     "max_budget": max_budget
                 }
-                final_output = graph_app.invoke(initial_state)
+                final_state = initial_state.copy()
+                
+                # Iteriamo sugli step in tempo reale
+                for output in graph_app.stream(initial_state):
+                    for node_name, node_state in output.items():
+                        # Aggiorniamo la UI in base al nodo appena completato
+                        if node_name == "scraper_node":
+                            st.write("✅ **Scraper:** Pagina web scaricata ed estratta.")
+                        elif node_name == "data_extractor_node":
+                            st.write("🧠 **AI Extractor:** Parametri e indirizzo strutturati.")
+                        elif node_name == "commuter_node":
+                            st.write("🚗 **Google Maps:** Calcolo del pendolarismo completato.")
+                        elif node_name == "osint_node":
+                            st.write("🌍 **Tavily OSINT:** Analisi del quartiere completata.")
+                        elif node_name == "evaluator_node":
+                            st.write("✍️ **AI Evaluator:** Stesura del report finale in corso...")
+                        
+                        # Aggiorniamo lo stato globale ad ogni step
+                        final_state.update(node_state)
+                
+                status.update(label="Analisi completata con successo!", state="complete", expanded=False)
+                
+                # Riassegnamo a final_output per non rompere il resto della UI
+                final_output = final_state
 
             # Sezione Visualizzazione Risultati
             st.divider()
