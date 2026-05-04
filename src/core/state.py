@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class StructuralParameters(BaseModel):
     """Hard constraints estratti dall'annuncio."""
+    property_address: str = Field(description='Indirizzo esatto o via dell immobile estratto dal testo')
     price: Optional[float] = None
     price_per_sqm: Optional[float] = None
     sqm: Optional[int] = None
@@ -36,6 +37,9 @@ class PropertyState(TypedDict):
     Questo è lo stato globale che viaggerà di nodo in nodo
     durante l'esecuzione del nostro grafo ciclico.
     """
+    target_url: str
+    user_office_address: str
+    max_budget: float
     property_url: str
     raw_listing_text: str
     

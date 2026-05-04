@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph, END
 
 from src.core.state import PropertyState
 from src.agents.nodes import (
+    scraper_node,
     data_extractor_node,
     commuter_node,
     osint_node,
@@ -27,14 +28,18 @@ def route_after_extraction(state: PropertyState) -> Union[List[str], str]:
 # Inizializza il StateGraph passando PropertyState
 graph = StateGraph(PropertyState)
 
-# Aggiungi i 4 nodi al grafo
+# Aggiungi i 5 nodi al grafo
+graph.add_node("scraper_node", scraper_node)
 graph.add_node("data_extractor_node", data_extractor_node)
 graph.add_node("commuter_node", commuter_node)
 graph.add_node("osint_node", osint_node)
 graph.add_node("evaluator_node", evaluator_node)
 
 # Imposta l'entry point
-graph.set_entry_point("data_extractor_node")
+graph.set_entry_point("scraper_node")
+
+# Aggiungi un arco lineare dallo scraper all'estrattore dati
+graph.add_edge("scraper_node", "data_extractor_node")
 
 # Aggiungi un conditional edge in uscita da "data_extractor_node"
 graph.add_conditional_edges(
@@ -58,8 +63,9 @@ if __name__ == '__main__':
     
     # Crea uno stato iniziale di test
     initial_state = {
-        "property_url": "https://www.immobiliare.it/annunci/12345678/",
-        "raw_listing_text": "VENDESI SPLENDIDO TRILOCALE IN ZONA ISOLA! Nel cuore pulsante di Milano, proponiamo in vendita luminoso appartamento di 92 metri quadri sito al quarto piano di uno stabile signorile anni 60. Purtroppo lo stabile è sprovvisto di ascensore. L'immobile si compone di ingresso, due ampie camere da letto, un bagno finestrato e soggiorno con cucina a vista. Richiesta: Euro 285.000 trattabili. Ottimo investimento!"
+        "target_url": "https://www.immobiliare.it/annunci/124904795/",
+        "user_office_address": "Piazza del Duomo, Milano",
+        "max_budget": 350000.0
     }
     
     print("Avvio elaborazione LangGraph...\n")

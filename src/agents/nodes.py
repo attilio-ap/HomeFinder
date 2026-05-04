@@ -12,27 +12,50 @@ from src.core.state import (
 )
 
 
+def scraper_node(state: PropertyState) -> dict:
+    print("⏳ [Scraper Agent] Recupero testo dell'annuncio dal web tramite Jina Reader...")
+    url = state.get('target_url')
+    if not url:
+        print("❌ [Scraper Agent] target_url mancante nello state.")
+        return {"raw_listing_text": "ERROR:SCRAPING_BLOCKED"}
+    try:
+        jina_url = f"https://r.jina.ai/{url}"
+        response = requests.get(jina_url)
+        response.raise_for_status()
+        text = response.text
+        print("✅ [Scraper Agent] Testo estratto con successo dalla pagina!")
+        return {"raw_listing_text": text}
+    except Exception as e:
+        print(f"❌ [Scraper Agent] Errore durante la GET request: {e}.")
+        return {"raw_listing_text": "ERROR:SCRAPING_BLOCKED"}
+
+
 def data_extractor_node(state: PropertyState) -> dict:
     print("⏳ [Data Extractor] Analisi dell'annuncio in corso...")
     try:
+        raw_listing_text = state.get("raw_listing_text", "") if isinstance(state, dict) else getattr(state, "raw_listing_text", "")
+        
+        if "ERROR:SCRAPING_BLOCKED" in raw_listing_text or "403" in raw_listing_text or "Forbidden" in raw_listing_text or len(raw_listing_text) < 50:
+            print("❌ [Data Extractor] Testo invalido o bloccato (ERROR/403/Forbidden). Interruzione estrazione.")
+            return {"extracted_parameters": None, "hard_constraints_met": False}
+
         llm = ChatGoogleGenerativeAI(model="gemini-flash-lite-latest", temperature=0)
         structured_llm = llm.with_structured_output(StructuralParameters)
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "Sei un analista immobiliare. Estrai i dati in modo oggettivo dal testo dell'annuncio. Converti i piani in numeri (es. piano terra = 0)."),
+            ("system", "Sei un analista immobiliare. Estrai i dati in modo oggettivo dal testo dell'annuncio. Assicurati di estrarre l'indirizzo esatto o la via dell'immobile in Milano (property_address). Converti i piani in numeri (es. piano terra = 0)."),
             ("user", "{text}")
         ])
 
         chain = prompt | structured_llm
-        
-        raw_listing_text = state.get("raw_listing_text", "") if isinstance(state, dict) else getattr(state, "raw_listing_text", "")
 
         extracted_data = chain.invoke({"text": raw_listing_text})
 
-        if getattr(extracted_data, "price", None) is not None and extracted_data.price > 300000:
-            is_go = False
-        else:
+        budget = state.get('max_budget')
+        if budget is not None and getattr(extracted_data, "price", None) is not None and extracted_data.price <= budget:
             is_go = True
+        else:
+            is_go = False
 
         print("✅ [Data Extractor] Dati estratti con successo!")
         return {
@@ -41,24 +64,29 @@ def data_extractor_node(state: PropertyState) -> dict:
         }
     except Exception as e:
         print(f"   ❌ ERRORE CRITICO: {e}") 
-        print("❌ [Data Extractor] Errore API, uso dati di default.")
-        return {"hard_constraints_met": False}
+        print("❌ [Data Extractor] Errore API, restituisco None.")
+        return {"extracted_parameters": None, "hard_constraints_met": False}
 
 
 def commuter_node(state: PropertyState) -> Dict[str, Any]:
     print("⏳ [Commuter Agent] Calcolo del percorso su Google Maps...")
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
-    if not api_key:
-        print("Errore: GOOGLE_MAPS_API_KEY non trovata. Restituisco dati mockati.")
+    extracted = state.get('extracted_parameters')
+    if extracted is None:
+        print("❌ [Commuter Agent] extracted_parameters mancante. Restituisco None.")
         return {
-            "commute_data": CommuteData(
-                transit_time_mins=35,
-                distance_km=12.5,
-            )
+            "commute_data": None
         }
 
-    origin = "Quartiere Isola, Milano"
-    destination = "Piazza del Duomo, Milano"
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        print("❌ [Commuter Agent] Errore: GOOGLE_MAPS_API_KEY non trovata. Restituisco None.")
+        return {
+            "commute_data": None
+        }
+
+    origin = getattr(extracted, 'property_address', 'Milano') if extracted else 'Milano'
+    destination = state.get('user_office_address', 'Milano')
+
     url = "https://maps.googleapis.com/maps/api/distancematrix/json"
     params = {
         "origins": origin,
@@ -83,33 +111,35 @@ def commuter_node(state: PropertyState) -> Dict[str, Any]:
             )
         }
     except Exception as e:
-        print(f"Errore durante la richiesta a Google Maps: {e}. Restituisco dati mockati.")
-        print("❌ [Commuter Agent] Errore API, uso dati di default.")
+        print(f"❌ [Commuter Agent] Errore durante la richiesta a Google Maps: {e}. Restituisco None.")
         return {
-            "commute_data": CommuteData(
-                transit_time_mins=35,
-                distance_km=12.5,
-            )
+            "commute_data": None
         }
 
 
 def osint_node(state: PropertyState) -> Dict[str, Any]:
     print("⏳ [OSINT Agent] Ricerca informazioni sul quartiere tramite Tavily...")
+    extracted = state.get('extracted_parameters')
+    if extracted is None:
+        print("❌ [OSINT Agent] extracted_parameters mancante. Restituisco None.")
+        return {
+            "osint_data": None
+        }
+
     api_key = os.getenv("TAVILY_API_KEY")
     if not api_key:
-        print("Errore: TAVILY_API_KEY non trovata. Restituisco dati mockati.")
+        print("❌ [OSINT Agent] Errore: TAVILY_API_KEY non trovata. Restituisco None.")
         return {
-            "osint_data": OsintData(
-                broadband_type="FTTH",
-                safety_score=0.8,
-                poi_count=5,
-            )
+            "osint_data": None
         }
+
+    address = getattr(extracted, 'property_address', 'Milano') if extracted else 'Milano'
+    query = f"{address} Milano sicurezza, criminalità, fibra ottica FTTH"
 
     url = "https://api.tavily.com/search"
     payload = {
         "api_key": api_key,
-        "query": "Quartiere Isola Milano sicurezza, criminalità, fibra ottica FTTH",
+        "query": query,
         "search_depth": "basic",
         "max_results": 3
     }
@@ -141,14 +171,9 @@ def osint_node(state: PropertyState) -> Dict[str, Any]:
             )
         }
     except Exception as e:
-        print(f"Errore durante la richiesta a Tavily: {e}. Restituisco dati mockati.")
-        print("❌ [OSINT Agent] Errore API, uso dati di default.")
+        print(f"❌ [OSINT Agent] Errore durante la richiesta a Tavily: {e}. Restituisco None.")
         return {
-            "osint_data": OsintData(
-                broadband_type="FTTH",
-                safety_score=0.8,
-                poi_count=5,
-            )
+            "osint_data": None
         }
 
 
@@ -156,6 +181,12 @@ def evaluator_node(state: PropertyState) -> Dict[str, Any]:
     print("⏳ [Evaluator Agent] Elaborazione del punteggio e stesura del report finale...")
     try:
         params = state.get('extracted_parameters')
+        if params is None:
+            return {
+                "final_score": 0.0,
+                "evaluation_report": "⚠️ Analisi Fallita: Non è stato possibile recuperare i dati dell'annuncio. Per procedere, utilizza il campo di Fallback nella UI e incolla il testo dell'annuncio manualmente."
+            }
+
         commute = state.get('commute_data')
         osint = state.get('osint_data')
 
@@ -212,8 +243,8 @@ def evaluator_node(state: PropertyState) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print("❌ [Evaluator Agent] Errore API, uso dati di default.")
+        print(f"❌ [Evaluator Agent] Errore API: {e}")
         return {
             "final_score": 0.0,
-            "evaluation_report": f"Errore durante la valutazione: {e}"
+            "evaluation_report": f"⚠️ Errore durante la valutazione: {e}"
         }
