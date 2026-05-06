@@ -1,111 +1,117 @@
-# 🏡 HomeFinder: Automated Real Estate Due Diligence
+# 🏢 AI Property Finder
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![LangGraph](https://img.shields.io/badge/Framework-LangGraph-orange)
-![Gemini](https://img.shields.io/badge/LLM-Gemini_3.1_Flash-green)
-![Status](https://img.shields.io/badge/Status-Functional_Prototype-brightgreen)
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
+![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_Workflow-orange)
+![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
-HomeFinder is an autonomous Multi-Agent System (MAS) engineered to eliminate information asymmetry in the real estate market. By leveraging a **LangGraph-based Map-Reduce architecture**, the system autonomously cross-references property listings with unstructured, real-world data (commuting times, neighborhood safety, internet coverage) to generate objective, quantifiable evaluations.
+## 🚀 L'Analista Immobiliare AI Personale
 
----
-
-## 🚀 Key Features
-
-The evaluation pipeline is divided into three distinct phases:
-
-### 1. Dynamic Scraping & Extraction
-*   **Jina Reader Integration:** Bypasses anti-bot 403 blocks to extract clean text from any property listing URL.
-*   **AI Data Extraction:** Uses **Gemini 1.5 Flash** to extract price, sqm, floor, features, and the exact property address.
-*   **Hard Constraints Filtering:** Automatically rejects properties exceeding the user's maximum budget to save on processing costs.
-
-### 2. Deep-Dive Parallel Agents
-Parallelized agents gather localized data for properties that pass the initial filter:
-*   ⏱️ **Commuter Agent:** Calculates exact transit times to the user's office via **Google Maps API**.
-*   🌍 **OSINT Agent:** Analyzes neighborhood safety and broadband (FTTH) availability via **Tavily Search API**.
-
-### 3. Weighted Sum Model (WSM) & Executive Summary
-*   **Mathematical Scoring:** Calculates a final score (0-100) based on price (40%), size (20%), commute (25%), and OSINT data (15%).
-*   **Executive Summary:** Generates a "ruthless and pragmatic" Markdown report using **Gemini 1.5 Flash**, highlighting pros and cons with bullet points for maximum readability.
+**Home Finder** è un sistema multi-agente avanzato che trasforma un semplice link di un annuncio immobiliare in una completa *due-diligence*. Attraverso un'architettura a grafo, l'intelligenza artificiale estrae i dati, valuta la logistica, analizza il contesto del quartiere tramite OSINT, simula il piano finanziario e stila un'email di negoziazione strategica basata sui difetti reali dell'immobile. Tutto in pochi secondi.
 
 ---
 
-## 🧠 System Architecture
+## ✨ Killer Features
 
-HomeFinder utilizes a sophisticated workflow within the LangGraph framework:
-1.  **Scraper Node:** Entry point using Jina Reader.
-2.  **Data Extractor Node:** Structured extraction and budget validation.
-3.  **Router:** Decides whether to proceed (Go) or terminate (No-Go) based on hard constraints.
-4.  **Parallel Execution:** Concurrent calls to Google Maps and Tavily.
-5.  **Evaluator Node:** Final mathematical scoring and LLM report generation.
-
----
-
-## 🖥️ User Interface (Streamlit Dashboard)
-
-The project includes a professional **Streamlit dashboard** featuring:
-*   **Real-time Tracking:** Uses `st.status` and LangGraph's `.stream()` to show the agent's progress step-by-step.
-*   **Custom UI/UX:** Styled metric cards and report boxes for a modern real estate dashboard feel.
-*   **Manual Fallback:** An expander to manually paste listing text if scraping is blocked, ensuring 100% usability.
+*   🕸️ **Web Scraping Resiliente:** Supera i blocchi anti-bot utilizzando Jina Reader per estrarre il testo grezzo dagli annunci. Include un sistema di *fallback* UI per l'inserimento manuale del testo.
+*   🔀 **Map-Reduce Architecture:** Sfrutta la potenza di LangGraph per l'esecuzione parallela. Dopo l'estrazione iniziale, gli agenti di logistica, OSINT e finanza lavorano in contemporanea per ridurre drasticamente i tempi di attesa.
+*   🌍 **OSINT & Logistica:** Non solo metri quadri. L'agente logistico calcola i tempi di pendolarismo reali verso il tuo ufficio tramite Google Maps, mentre l'agente OSINT indaga su criminalità e copertura fibra (FTTH) del quartiere usando Tavily.
+*   💰 **Financial Advisor:** Analizza il prezzo richiesto, calcola il mutuo stimato in base al tuo anticipo e ai tassi attuali, e definisce un "Target Price" agevolato (sconto del 12%).
+*   🤝 **Agente Negoziatore:** Crea automaticamente un'email di negoziazione formale ma decisa, sfruttando le vulnerabilità trovate (es. assenza di ascensore, zona poco sicura) per giustificare un'offerta al ribasso.
 
 ---
 
-## 🛠️ Technology Stack
+## 🧠 Architettura del Grafo (Multi-Agent Workflow)
 
-*   **Core:** Python 3.10+
-*   **Orchestration:** LangGraph, LangChain
-*   **LLMs:** Google Gemini API (Flash & Pro models)
-*   **APIs:** Google Maps Distance Matrix, Tavily Search, Jina Reader
-*   **UI:** Streamlit with Custom CSS
-*   **Data Validation:** Pydantic
+Il flusso di lavoro è orchestrato tramite **LangGraph**, garantendo un'esecuzione controllata, con *conditional routing* e rami paralleli.
 
----
+```mermaid
+graph TD
+    A[🌐 Scraper Node<br/>Jina Reader] --> B(🧠 Data Extractor Node<br/>LLM + Pydantic)
+    
+    B -- Hard Constraints Met --> C{Diramazione Parallela}
+    B -- Constraints Failed --> Z((END))
 
-## ⚙️ Getting Started (Local Development)
+    C --> D[🚗 Commuter Node<br/>Google Maps]
+    C --> E[🌍 OSINT Node<br/>Tavily API]
+    C --> F[💰 Financial Node<br/>Mortgage Calc]
 
-### Prerequisites
-* Python 3.10 or higher
-* Valid API keys for Google Gemini, Google Maps, and Tavily.
+    D --> G(✍️ Evaluator Node<br/>WSM + LLM Summary)
+    E --> G
+    F --> G
 
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/HomeFinder.git
-   cd HomeFinder
-   ```
-
-2. **Set up the virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Environment Variables:**
-   Create a `.env` file in the root directory and add your API keys:
-   ```env
-   GOOGLE_API_KEY=your_gemini_key_here
-   GOOGLE_MAPS_API_KEY=your_maps_key_here
-   TAVILY_API_KEY=your_tavily_key_here
-   ```
-
-### 🏃‍♂️ Running the Dashboard
-Launch the Streamlit interface:
-```bash
-streamlit run app.py
+    G --> H[🤝 Negotiator Node<br/>Email Generation]
+    H --> Z
 ```
 
 ---
 
-## 🗺️ Roadmap & Future Integrations
+## 🛠️ Tech Stack
 
-- [x] LangGraph Core Workflow
-- [x] Jina Reader Scraping Integration
-- [x] Streamlit Dashboard with Real-time Tracking
+Il progetto si basa sulle migliori tecnologie moderne per l'AI e lo sviluppo web:
+
+*   **Orchestrazione:** [LangGraph](https://python.langchain.com/docs/langgraph) / LangChain
+*   **LLM Engine:** [Google Gemini](https://ai.google.dev/) (modelli `gemini-flash-lite-latest` per l'estrazione veloce e `gemini-flash-latest` per il reasoning complesso)
+*   **Web UI:** [Streamlit](https://streamlit.io/)
+*   **Data Validation:** [Pydantic](https://docs.pydantic.dev/)
+*   **External APIs:**
+    *   [Tavily](https://tavily.com/) (Motore di ricerca AI per OSINT)
+    *   [Google Maps Distance Matrix](https://developers.google.com/maps/documentation/distance-matrix) (Logistica e tempi di percorrenza)
+    *   [Jina Reader](https://jina.ai/) (Estrazione testo da URL)
 
 ---
 
+## ⚙️ Setup e Installazione
+
+Segui questi passaggi per configurare l'ambiente locale e far partire l'applicazione.
+
+**1. Clona la repository**
+```bash
+git clone https://github.com/tuo-username/home-finder.git
+cd home-finder
+```
+
+**2. Crea e attiva l'ambiente virtuale**
+```bash
+python -m venv venv
+# Su Windows:
+venv\Scripts\activate
+# Su macOS/Linux:
+source venv/bin/activate
+```
+
+**3. Installa le dipendenze**
+```bash
+pip install -r requirements.txt
+```
+*(Assicurati che nel file `requirements.txt` siano inclusi pacchetti chiave come `streamlit`, `langgraph`, `langchain-google-genai`, `pydantic`, `requests`, `python-dotenv`).*
+
+**4. Configura le Variabili d'Ambiente**
+Crea un file `.env` nella root del progetto e inserisci le tue chiavi API:
+```env
+# Google Gemini API Key
+GOOGLE_API_KEY=your_gemini_api_key_here
+
+# Tavily API Key per l'agente OSINT
+TAVILY_API_KEY=your_tavily_api_key_here
+
+# Google Maps API Key per l'agente Commuter
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+```
+
+---
+
+## 🎮 Utilizzo
+
+Una volta configurato l'ambiente, lanciare l'interfaccia utente è semplicissimo.
+Dal tuo terminale, esegui:
+
+```bash
+streamlit run app.py
+```
+
+Si aprirà automaticamente una finestra nel tuo browser predefinito.
+1. Inserisci l'URL dell'annuncio (o usa l'espansore per incollare il testo manualmente se il sito ha protezioni anti-scraping).
+2. Imposta l'indirizzo del tuo ufficio, il budget massimo e i parametri finanziari (anticipo, tasso, durata).
+3. Clicca su **"Avvia Analisi Completa"** e osserva gli agenti lavorare in tempo reale!

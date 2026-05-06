@@ -10,6 +10,8 @@ from src.agents.nodes import (
     commuter_node,
     osint_node,
     evaluator_node,
+    financial_node,
+    negotiator_node,
 )
 
 
@@ -22,18 +24,20 @@ def route_after_extraction(state: PropertyState) -> Union[List[str], str]:
     if not state.get('hard_constraints_met'):
         return END
     
-    return ["commuter_node", "osint_node"]
+    return ["commuter_node", "osint_node", "financial_node"]
 
 
 # Inizializza il StateGraph passando PropertyState
 graph = StateGraph(PropertyState)
 
-# Aggiungi i 5 nodi al grafo
+# Aggiungi i nodi al grafo
 graph.add_node("scraper_node", scraper_node)
 graph.add_node("data_extractor_node", data_extractor_node)
 graph.add_node("commuter_node", commuter_node)
 graph.add_node("osint_node", osint_node)
+graph.add_node("financial_node", financial_node)
 graph.add_node("evaluator_node", evaluator_node)
+graph.add_node("negotiator_node", negotiator_node)
 
 # Imposta l'entry point
 graph.set_entry_point("scraper_node")
@@ -48,11 +52,16 @@ graph.add_conditional_edges(
 )
 
 # Aggiungi i normali edge per il Fan-in al nodo valutatore
+# (L'esecuzione parallela confluisce qui)
 graph.add_edge("commuter_node", "evaluator_node")
 graph.add_edge("osint_node", "evaluator_node")
+graph.add_edge("financial_node", "evaluator_node")
 
-# Collega "evaluator_node" a END
-graph.add_edge("evaluator_node", END)
+# Dopo evaluator_node, il flusso va al negoziatore
+graph.add_edge("evaluator_node", "negotiator_node")
+
+# Il negoziatore chiude il grafo
+graph.add_edge("negotiator_node", END)
 
 # Compila il grafo in una variabile chiamata app
 app = graph.compile()
@@ -65,7 +74,10 @@ if __name__ == '__main__':
     initial_state = {
         "target_url": "https://www.immobiliare.it/annunci/124904795/",
         "user_office_address": "Piazza del Duomo, Milano",
-        "max_budget": 350000.0
+        "max_budget": 350000.0,
+        "down_payment": 50000.0,
+        "interest_rate": 0.035,
+        "loan_term_years": 30
     }
     
     print("Avvio elaborazione LangGraph...\n")

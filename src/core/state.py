@@ -43,6 +43,11 @@ class PropertyState(TypedDict):
     property_url: str
     raw_listing_text: str
     
+    # Input finanziari
+    down_payment: float
+    interest_rate: float
+    loan_term_years: int
+    
     # Dati strutturati usando i modelli Pydantic
     extracted_parameters: StructuralParameters
     commute_data: CommuteData
@@ -52,3 +57,7 @@ class PropertyState(TypedDict):
     hard_constraints_met: bool  # Il nostro interruttore Go/No-Go
     final_score: float
     evaluation_report: str
+    
+    # Output finanziari e di negoziazione
+    financial_data: dict
+    negotiation_email: str

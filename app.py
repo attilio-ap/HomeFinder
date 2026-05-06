@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from src.core.graph import app as graph_app
-from src.agents.nodes import data_extractor_node, commuter_node, osint_node, evaluator_node
+from src.agents.nodes import data_extractor_node, commuter_node, osint_node, financial_node, evaluator_node, negotiator_node
 
 # Configurazione della pagina
 st.set_page_config(page_title="AI Property Finder", page_icon="🏢", layout="wide")
@@ -72,6 +72,16 @@ with col2:
 with col3:
     max_budget = st.number_input("Budget Massimo (€)", min_value=50000.0, value=350000.0, step=10000.0)
 
+# Input Finanziari
+f_col1, f_col2, f_col3 = st.columns(3)
+with f_col1:
+    down_payment = st.number_input("Anticipo Disponibile (€)", value=50000.0, step=5000.0)
+with f_col2:
+    interest_rate = st.number_input("Tasso Interesse Stimato (%)", value=3.5, step=0.1)
+with f_col3:
+    loan_term_years = st.number_input("Durata Mutuo (Anni)", value=30, step=1)
+
+
 with st.expander("🛠️ Non riesci a incollare l'URL? Usa il testo manuale"):
     manual_text = st.text_area("Incolla qui il testo dell'annuncio se il sito blocca lo scraper")
 
@@ -90,7 +100,10 @@ if start_analysis:
                 state = {
                     "raw_listing_text": manual_text,
                     "user_office_address": user_office_address,
-                    "max_budget": max_budget
+                    "max_budget": max_budget,
+                    "down_payment": down_payment,
+                    "interest_rate": interest_rate / 100.0, # converti in decimale
+                    "loan_term_years": loan_term_years
                 }
                 
                 st.write("✅ **Scraper:** Bypassato (testo manuale fornito).")
@@ -107,8 +120,14 @@ if start_analysis:
                     state.update(osint_node(state))
                     st.write("🌍 **Tavily OSINT:** Analisi del quartiere completata.")
                     
+                    state.update(financial_node(state))
+                    st.write("💰 **Financial:** Simulazione mutuo e target di prezzo calcolati.")
+
                     st.write("✍️ **AI Evaluator:** Stesura del report finale in corso...")
                     state.update(evaluator_node(state))
+
+                    st.write("🤝 **Negotiator:** Stesura email di negoziazione in corso...")
+                    state.update(negotiator_node(state))
                     
                 final_output = state
                 status.update(label="Analisi completata con successo!", state="complete", expanded=False)
@@ -117,7 +136,10 @@ if start_analysis:
                 initial_state = {
                     "target_url": target_url,
                     "user_office_address": user_office_address,
-                    "max_budget": max_budget
+                    "max_budget": max_budget,
+                    "down_payment": down_payment,
+                    "interest_rate": interest_rate / 100.0, # converti in decimale
+                    "loan_term_years": loan_term_years
                 }
                 final_state = initial_state.copy()
                 
@@ -133,8 +155,12 @@ if start_analysis:
                             st.write("🚗 **Google Maps:** Calcolo del pendolarismo completato.")
                         elif node_name == "osint_node":
                             st.write("🌍 **Tavily OSINT:** Analisi del quartiere completata.")
+                        elif node_name == "financial_node" or node_name == "financial":
+                            st.write("💰 **Financial:** Simulazione mutuo e target di prezzo calcolati.")
                         elif node_name == "evaluator_node":
                             st.write("✍️ **AI Evaluator:** Stesura del report finale in corso...")
+                        elif node_name == "negotiator_node" or node_name == "negotiator":
+                            st.write("🤝 **Negotiator:** Stesura email di negoziazione in corso...")
                         
                         # Aggiorniamo lo stato globale ad ogni step
                         final_state.update(node_state)
@@ -224,3 +250,40 @@ if start_analysis:
                     {report}
                 </div>
                 """, unsafe_allow_html=True)
+
+                # Analisi Finanziaria & Mutuo
+                st.subheader("📊 Analisi Finanziaria & Mutuo")
+                fin_data = final_output.get("financial_data", {})
+                if fin_data:
+                    col_fin1, col_fin2 = st.columns(2)
+                    
+                    orig_price = fin_data.get("original_price", 0)
+                    orig_inst = fin_data.get("original_installment", 0)
+                    disc_price = fin_data.get("discounted_price", 0)
+                    disc_inst = fin_data.get("discounted_installment", 0)
+                    disc_perc = fin_data.get("discount_percentage", 12)
+                    
+                    with col_fin1:
+                        st.metric(
+                            label=f"Prezzo Originale",
+                            value=f"€ {orig_price:,.2f}".replace(",", "."),
+                            delta=f"Rata mensile: € {orig_inst:,.2f}".replace(",", "."),
+                            delta_color="off"
+                        )
+                    with col_fin2:
+                        st.metric(
+                            label=f"Prezzo Target (-{disc_perc}%)",
+                            value=f"€ {disc_price:,.2f}".replace(",", "."),
+                            delta=f"Rata mensile: € {disc_inst:,.2f}".replace(",", "."),
+                            delta_color="normal"
+                        )
+                else:
+                    st.info("Dati finanziari non disponibili.")
+
+                # Email di Negoziazione Generata
+                st.subheader("✉️ Email di Negoziazione Generata")
+                email_content = final_output.get("negotiation_email", "")
+                if email_content:
+                    st.info(email_content)
+                else:
+                    st.warning("Email di negoziazione non generata.")

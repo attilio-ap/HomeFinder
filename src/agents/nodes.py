@@ -248,3 +248,77 @@ def evaluator_node(state: PropertyState) -> Dict[str, Any]:
             "final_score": 0.0,
             "evaluation_report": f"⚠️ Errore durante la valutazione: {e}"
         }
+
+
+def financial_node(state: PropertyState) -> dict:
+    print("⏳ [Financial Agent] Calcolo ammortamento e rata...")
+    extracted = state.get('extracted_parameters')
+    if extracted is None:
+        return {}
+    
+    price = getattr(extracted, 'price', None)
+    if price is None:
+        return {}
+
+    down_payment = state.get('down_payment', 0.0)
+    interest_rate = state.get('interest_rate', 0.0)
+    loan_term_years = state.get('loan_term_years', 0)
+
+    P = price - down_payment
+    r = interest_rate / 12
+    n = loan_term_years * 12
+
+    def calculate_installment(principal, rate, months):
+        if principal <= 0 or months <= 0:
+            return 0.0
+        if rate == 0:
+            return principal / months
+        return principal * (rate * (1 + rate)**months) / (((1 + rate)**months) - 1)
+
+    M1 = calculate_installment(P, r, n)
+    
+    discounted_price = price * 0.88
+    P2 = discounted_price - down_payment
+    M2 = calculate_installment(P2, r, n)
+
+    print("✅ [Financial Agent] Calcoli completati!")
+    return {
+        "financial_data": {
+            "original_price": price,
+            "original_installment": M1,
+            "discounted_price": discounted_price,
+            "discounted_installment": M2,
+            "discount_percentage": 12
+        }
+    }
+
+
+def negotiator_node(state: PropertyState) -> dict:
+    print("⏳ [Negotiator Agent] Generazione email di negoziazione...")
+    evaluation_report = state.get('evaluation_report')
+    financial_data = state.get('financial_data')
+    
+    if not evaluation_report or not financial_data:
+        return state
+        
+    raw_listing_text = state.get('raw_listing_text', '')
+    
+    llm = ChatGoogleGenerativeAI(model="models/gemini-flash-latest", temperature=0.4)
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Sei un negoziatore immobiliare esperto."),
+        ("user", "Testo dell'annuncio: {listing}\n\nReport di valutazione: {report}\n\nDati finanziari: {finance}\n\nScrivi un'email formale, cortese ma decisa, all'agenzia immobiliare. L'email deve proporre come offerta il discounted_price indicato nei dati finanziari, giustificando la richiesta di sconto facendo leva esclusivamente sui difetti reali emersi dal report (es. ristrutturazione necessaria, assenza ascensore, zona, ecc.).")
+    ])
+    
+    chain = prompt | llm
+    try:
+        response = chain.invoke({
+            "listing": raw_listing_text,
+            "report": evaluation_report,
+            "finance": financial_data
+        })
+        print("✅ [Negotiator Agent] Email generata con successo!")
+        return {"negotiation_email": response.content}
+    except Exception as e:
+        print(f"❌ [Negotiator Agent] Errore API: {e}")
+        return state
