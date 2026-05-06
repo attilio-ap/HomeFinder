@@ -1,4 +1,4 @@
-# 🏢 AI Property Finder
+# 🏢 Home Finder
 
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_Workflow-orange)

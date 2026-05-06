@@ -4,7 +4,7 @@ from src.core.graph import app as graph_app
 from src.agents.nodes import data_extractor_node, commuter_node, osint_node, financial_node, evaluator_node, negotiator_node
 
 # Page configuration
-st.set_page_config(page_title="AI Property Finder", page_icon="🏢", layout="wide")
+st.set_page_config(page_title="Home Finder", page_icon="🏢", layout="wide")
 
 # Custom CSS
 st.markdown("""
@@ -58,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Hero Section
-st.title("🏢 AI Property Finder")
+st.title("🏢 Home Finder")
 st.markdown("#### The Artificial Intelligence that evaluates your next real estate investment")
 st.write("") # Spacing
 
