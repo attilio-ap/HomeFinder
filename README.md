@@ -12,7 +12,7 @@
 
 ---
 
-## ✨ Killer Features
+## ✨ Features
 
 *   🕸️ **Resilient Web Scraping:** Bypasses anti-bot blocks using Jina Reader to extract raw text from listings. Includes a UI *fallback* system for manual text entry.
 *   🔀 **Map-Reduce Architecture:** Leverages the power of LangGraph for parallel execution. After the initial extraction, logistics, OSINT, and finance agents work concurrently to drastically reduce wait times.
