@@ -106,8 +106,6 @@ streamlit run app.py
 - [x] LangGraph Core Workflow
 - [x] Jina Reader Scraping Integration
 - [x] Streamlit Dashboard with Real-time Tracking
-- [ ] **Future:** Computer Vision integration for floor plan analysis.
-- [ ] **Future:** Cadastral API integration for legal verification.
 
 ---
 
