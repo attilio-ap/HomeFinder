@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 # ==========================================
 
 class StructuralParameters(BaseModel):
-    """Hard constraints estratti dall'annuncio."""
-    property_address: str = Field(description='Indirizzo esatto o via dell immobile estratto dal testo')
+    """Hard constraints extracted from the listing."""
+    property_address: str = Field(description='Exact address or street of the property extracted from the text')
     price: Optional[float] = None
     price_per_sqm: Optional[float] = None
     sqm: Optional[int] = None
@@ -18,14 +18,14 @@ class StructuralParameters(BaseModel):
     has_architectural_barriers: Optional[bool] = None
 
 class CommuteData(BaseModel):
-    """Dati logistici calcolati dall'agente mappe."""
+    """Logistical data calculated by the maps agent."""
     transit_time_mins: Optional[int] = None
     distance_km: Optional[float] = None
 
 class OsintData(BaseModel):
-    """Dati ambientali e di infrastruttura."""
-    broadband_type: Optional[str] = None  # es. FTTH, FTTC, 5G
-    safety_score: Optional[float] = Field(None, ge=-1.0, le=1.0) # Normalizzato tra -1 e 1
+    """Environmental and infrastructure data."""
+    broadband_type: Optional[str] = None  # e.g., FTTH, FTTC, 5G
+    safety_score: Optional[float] = Field(None, ge=-1.0, le=1.0) # Normalized between -1 and 1
     poi_count: Optional[int] = None
 
 # ==========================================
@@ -34,8 +34,8 @@ class OsintData(BaseModel):
 
 class PropertyState(TypedDict):
     """
-    Questo è lo stato globale che viaggerà di nodo in nodo
-    durante l'esecuzione del nostro grafo ciclico.
+    This is the global state that will travel from node to node
+    during the execution of our cyclic graph.
     """
     target_url: str
     user_office_address: str
@@ -43,21 +43,21 @@ class PropertyState(TypedDict):
     property_url: str
     raw_listing_text: str
     
-    # Input finanziari
+    # Financial inputs
     down_payment: float
     interest_rate: float
     loan_term_years: int
     
-    # Dati strutturati usando i modelli Pydantic
+    # Structured data using Pydantic models
     extracted_parameters: StructuralParameters
     commute_data: CommuteData
     osint_data: OsintData
     
-    # Variabili di controllo e output
-    hard_constraints_met: bool  # Il nostro interruttore Go/No-Go
+    # Control variables and outputs
+    hard_constraints_met: bool  # Our Go/No-Go switch
     final_score: float
     evaluation_report: str
     
-    # Output finanziari e di negoziazione
+    # Financial and negotiation outputs
     financial_data: dict
     negotiation_email: str
