@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import asyncio
 from src.core.graph import app as graph_app
 from src.agents.nodes import data_extractor_node, commuter_node, osint_node, financial_node, evaluator_node, negotiator_node
 
@@ -90,6 +91,27 @@ st.write("") # Spacing
 # Execution Button in the center
 start_analysis = st.button("Start Full Analysis", type="primary", use_container_width=True)
 
+async def run_langgraph_stream(initial_state):
+    final_state = initial_state.copy()
+    async for output in graph_app.astream(initial_state):
+        for node_name, node_state in output.items():
+            if node_name == "scraper_node":
+                st.write("✅ **Scraper:** Web page downloaded and extracted.")
+            elif node_name == "data_extractor_node":
+                st.write("🧠 **AI Extractor:** Parameters and address structured.")
+            elif node_name == "commuter_node":
+                st.write("🚗 **Google Maps:** Commuting calculation completed.")
+            elif node_name == "osint_node":
+                st.write("🌍 **Tavily OSINT:** Neighborhood analysis completed.")
+            elif node_name == "financial_node" or node_name == "financial":
+                st.write("💰 **Financial:** Mortgage simulation and target price calculated.")
+            elif node_name == "evaluator_node":
+                st.write("✍️ **AI Evaluator:** Drafting final report...")
+            elif node_name == "negotiator_node" or node_name == "negotiator":
+                st.write("🤝 **Negotiator:** Drafting negotiation email...")
+            final_state.update(node_state)
+    return final_state
+
 if start_analysis:
     if not target_url and not manual_text:
         st.warning("Please enter a URL or paste the listing text to proceed.")
@@ -109,25 +131,25 @@ if start_analysis:
                 st.write("✅ **Scraper:** Bypassed (manual text provided).")
                 
                 # Node 1: Extraction
-                state.update(data_extractor_node(state))
+                state.update(asyncio.run(data_extractor_node(state)))
                 st.write("🧠 **AI Extractor:** Parameters and address structured.")
                 
                 # If hard constraints are met, proceeds in parallel (simulated) and then evaluates
                 if state.get("hard_constraints_met"):
-                    state.update(commuter_node(state))
+                    state.update(asyncio.run(commuter_node(state)))
                     st.write("🚗 **Google Maps:** Commuting calculation completed.")
                     
-                    state.update(osint_node(state))
+                    state.update(asyncio.run(osint_node(state)))
                     st.write("🌍 **Tavily OSINT:** Neighborhood analysis completed.")
                     
-                    state.update(financial_node(state))
+                    state.update(asyncio.run(financial_node(state)))
                     st.write("💰 **Financial:** Mortgage simulation and target price calculated.")
 
                     st.write("✍️ **AI Evaluator:** Drafting final report...")
-                    state.update(evaluator_node(state))
+                    state.update(asyncio.run(evaluator_node(state)))
 
                     st.write("🤝 **Negotiator:** Drafting negotiation email...")
-                    state.update(negotiator_node(state))
+                    state.update(asyncio.run(negotiator_node(state)))
                     
                 final_output = state
                 status.update(label="Analysis successfully completed!", state="complete", expanded=False)
@@ -141,34 +163,10 @@ if start_analysis:
                     "interest_rate": interest_rate / 100.0, # convert to decimal
                     "loan_term_years": loan_term_years
                 }
-                final_state = initial_state.copy()
                 
-                # Iterate over steps in real-time
-                for output in graph_app.stream(initial_state):
-                    for node_name, node_state in output.items():
-                        # Update UI based on the newly completed node
-                        if node_name == "scraper_node":
-                            st.write("✅ **Scraper:** Web page downloaded and extracted.")
-                        elif node_name == "data_extractor_node":
-                            st.write("🧠 **AI Extractor:** Parameters and address structured.")
-                        elif node_name == "commuter_node":
-                            st.write("🚗 **Google Maps:** Commuting calculation completed.")
-                        elif node_name == "osint_node":
-                            st.write("🌍 **Tavily OSINT:** Neighborhood analysis completed.")
-                        elif node_name == "financial_node" or node_name == "financial":
-                            st.write("💰 **Financial:** Mortgage simulation and target price calculated.")
-                        elif node_name == "evaluator_node":
-                            st.write("✍️ **AI Evaluator:** Drafting final report...")
-                        elif node_name == "negotiator_node" or node_name == "negotiator":
-                            st.write("🤝 **Negotiator:** Drafting negotiation email...")
-                        
-                        # Update global state at each step
-                        final_state.update(node_state)
+                final_output = asyncio.run(run_langgraph_stream(initial_state))
                 
                 status.update(label="Analysis successfully completed!", state="complete", expanded=False)
-                
-                # Reassign to final_output to not break the rest of the UI
-                final_output = final_state
 
             # Results Display Section
             st.divider()

@@ -18,12 +18,11 @@ from src.agents.nodes import (
 def route_after_extraction(state: PropertyState) -> Union[List[str], str]:
     """
     Reads the state after extraction.
-    If hard constraints are not met (False), terminates the graph.
-    If they are met (True), returns the list of nodes to launch in parallel.
+    If extraction failed (None) or hard constraints are not met (False), terminates the graph.
+    If they are met, continues to the parallel execution.
     """
-    if not state.get('hard_constraints_met'):
+    if not state.get("extracted_parameters") or not state.get("hard_constraints_met"):
         return END
-    
     return ["commuter_node", "osint_node", "financial_node"]
 
 
@@ -68,6 +67,7 @@ app = graph.compile()
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
+    import asyncio
     load_dotenv()
     
     # Create an initial test state
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     print("Starting LangGraph processing...\n")
     
     # Launch graph execution
-    final_output = app.invoke(initial_state)
+    final_output = asyncio.run(app.ainvoke(initial_state))
     
     # Print the final output dictionary to the screen using pprint
     print("\n--- Final Output ---")
