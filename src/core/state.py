@@ -14,6 +14,7 @@ class StructuralParameters(BaseModel):
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     floor: Optional[str] = None
+    energy_class: Optional[str] = Field(None, description='Energy class from A to G')
     has_elevator: Optional[bool] = None
     has_architectural_barriers: Optional[bool] = None
 
@@ -26,6 +27,9 @@ class OsintData(BaseModel):
     """Environmental and infrastructure data."""
     broadband_type: Optional[str] = None  # e.g., FTTH, FTTC, 5G
     safety_score: Optional[float] = Field(None, ge=-1.0, le=1.0) # Normalized between -1 and 1
+    noise_level: Optional[float] = Field(None, ge=-1.0, le=1.0, description="Noise level: -1.0 (very noisy) to 1.0 (very quiet)")
+    public_transport_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Proximity to public transport: 0.0 to 1.0")
+    amenities_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Proximity to services/amenities: 0.0 to 1.0")
     poi_count: Optional[int] = None
 
 # ==========================================

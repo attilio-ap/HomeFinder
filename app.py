@@ -4,284 +4,199 @@ import asyncio
 from src.core.graph import app as graph_app
 from src.agents.nodes import data_extractor_node, commuter_node, osint_node, financial_node, evaluator_node, negotiator_node
 
-# Page configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. PAGE CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Home Finder", page_icon="🏢", layout="wide")
 
-# Custom CSS
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. CUSTOM CSS - PREMIUM PROPTECH THEME
+# ─────────────────────────────────────────────────────────────────────────────
+with open("assets/style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. UI - HEADER
+# ─────────────────────────────────────────────────────────────────────────────
 st.markdown("""
-<style>
-.metric-card {
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    margin-bottom: 20px;
-}
-.metric-card h3 {
-    margin-top: 0;
-    color: #555;
-    font-size: 1.1em;
-}
-.metric-card h2 {
-    color: #1f77b4;
-    margin-bottom: 0;
-    font-size: 1.8em;
-}
-.report-box {
-    background-color: #eef2f5;
-    border-left: 5px solid #1f77b4;
-    border-radius: 5px;
-    padding: 25px;
-    margin-top: 10px;
-    font-size: 1.05em;
-    line-height: 1.6;
-    color: #333;
-}
-/* Adaptation for Streamlit dark theme */
-@media (prefers-color-scheme: dark) {
-    .metric-card {
-        background-color: #262730;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-    .metric-card h3 {
-        color: #ccc;
-    }
-    .metric-card h2 {
-        color: #4fa8f7;
-    }
-    .report-box {
-        background-color: #1e1e1e;
-        color: #ddd;
-    }
-}
-</style>
+<div class="premium-header">    
+    <h1>Home Finder<span style="color: #0F52BA;">.</span></h1>    
+    <p>Advanced AI-driven real estate investment evaluation</p>
+</div>
 """, unsafe_allow_html=True)
 
-# Hero Section
-st.title("🏢 Home Finder")
-st.markdown("#### The Artificial Intelligence that evaluates your next real estate investment")
-st.write("") # Spacing
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. UI - INPUT FORM
+# ─────────────────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-title">📍 Property Details</div>', unsafe_allow_html=True)
 
-# User Input in Main Layout (No Sidebar)
-col1, col2, col3 = st.columns([2, 1, 1])
-
-with col1:
-    target_url = st.text_input("Real Estate Listing URL", placeholder="E.g. https://www.immobiliare.it/annunci/...")
-with col2:
+col_url, col_addr = st.columns([2, 1], gap="medium")
+with col_url:
+    target_url = st.text_input("Real Estate Listing URL", placeholder="https://www.immobiliare.it/annunci/...")
+with col_addr:
     user_office_address = st.text_input("Office Address", value="Piazza del Duomo, Milano")
-with col3:
-    max_budget = st.number_input("Maximum Budget (€)", min_value=50000.0, value=350000.0, step=10000.0)
 
-# Financial Inputs
-f_col1, f_col2, f_col3 = st.columns(3)
+with st.expander("🛠️ Manual Text Entry (Use if scraper is blocked)"):
+    manual_text = st.text_area("Paste the listing text here", height=150)
+
+st.markdown('<div class="section-title">🏛️ Financial Parameters</div>', unsafe_allow_html=True)
+
+f_col1, f_col2, f_col3, f_col4 = st.columns(4)
 with f_col1:
-    down_payment = st.number_input("Available Down Payment (€)", value=50000.0, step=5000.0)
+    max_budget = st.number_input("Max Budget (€)", min_value=10000, value=350000, step=10000)
 with f_col2:
-    interest_rate = st.number_input("Estimated Interest Rate (%)", value=3.5, step=0.1)
+    down_payment = st.number_input("Down Payment (€)", value=50000, step=5000)
 with f_col3:
-    loan_term_years = st.number_input("Mortgage Term (Years)", value=30, step=1)
+    interest_rate = st.number_input("Interest Rate (%)", value=3.5, step=0.1, format="%.1f")
+with f_col4:
+    loan_term_years = st.number_input("Term (Years)", value=30, min_value=1, max_value=40)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. ACTION BUTTON
+# ─────────────────────────────────────────────────────────────────────────────
+st.write("")
+_, col_btn, _ = st.columns([1, 2, 1])
+with col_btn:
+    start_analysis = st.button("🚀 Analyze Property", type="primary", use_container_width=True)
+st.write("")
 
-with st.expander("🛠️ Can't paste the URL? Use manual text"):
-    manual_text = st.text_area("Paste the listing text here if the site blocks the scraper")
-
-st.write("") # Spacing
-
-# Execution Button in the center
-start_analysis = st.button("Start Full Analysis", type="primary", use_container_width=True)
-
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. EXECUTION LOGIC
+# ─────────────────────────────────────────────────────────────────────────────
 async def run_langgraph_stream(initial_state):
     final_state = initial_state.copy()
     async for output in graph_app.astream(initial_state):
         for node_name, node_state in output.items():
             if node_name == "scraper_node":
-                st.write("✅ **Scraper:** Web page downloaded and extracted.")
+                st.write("✅ **Scraper:** Content extracted.")
             elif node_name == "data_extractor_node":
-                st.write("🧠 **AI Extractor:** Parameters and address structured.")
+                st.write("🧠 **AI Extractor:** Data structured.")
             elif node_name == "commuter_node":
-                st.write("🚗 **Google Maps:** Commuting calculation completed.")
+                st.write("🚗 **Maps:** Commute calculated.")
             elif node_name == "osint_node":
-                st.write("🌍 **Tavily OSINT:** Neighborhood analysis completed.")
-            elif node_name == "financial_node" or node_name == "financial":
-                st.write("💰 **Financial:** Mortgage simulation and target price calculated.")
+                st.write("🌍 **OSINT:** Neighborhood analyzed.")
+            elif node_name == "financial_node":
+                st.write("💰 **Financial:** Mortgage simulated.")
             elif node_name == "evaluator_node":
-                st.write("✍️ **AI Evaluator:** Drafting final report...")
-            elif node_name == "negotiator_node" or node_name == "negotiator":
-                st.write("🤝 **Negotiator:** Drafting negotiation email...")
+                st.write("✍️ **Evaluator:** Report drafted.")
+            elif node_name == "negotiator_node":
+                st.write("🤝 **Negotiator:** Email generated.")
             final_state.update(node_state)
     return final_state
 
 if start_analysis:
     if not target_url and not manual_text:
-        st.warning("Please enter a URL or paste the listing text to proceed.")
+        st.warning("Please provide a URL or manual text.")
     else:
-        with st.status("Starting LangGraph agent...", expanded=True) as status:
+        with st.status("Initializing Analysis Engine...", expanded=True) as status:
+            initial_state = {
+                "user_office_address": user_office_address,
+                "max_budget": float(max_budget),
+                "down_payment": float(down_payment),
+                "interest_rate": interest_rate / 100.0,
+                "loan_term_years": int(loan_term_years)
+            }
+
             if manual_text:
-                # Skips the scraper node and executes subsequent nodes manually using the provided text
-                state = {
-                    "raw_listing_text": manual_text,
-                    "user_office_address": user_office_address,
-                    "max_budget": max_budget,
-                    "down_payment": down_payment,
-                    "interest_rate": interest_rate / 100.0, # convert to decimal
-                    "loan_term_years": loan_term_years
-                }
+                st.write("📝 Using manual text input...")
+                state = initial_state.copy()
+                state["raw_listing_text"] = manual_text
                 
-                st.write("✅ **Scraper:** Bypassed (manual text provided).")
-                
-                # Node 1: Extraction
+                # Manual sequential execution for manual text
                 state.update(asyncio.run(data_extractor_node(state)))
-                st.write("🧠 **AI Extractor:** Parameters and address structured.")
+                st.write("🧠 **AI Extractor:** Data structured.")
                 
-                # If hard constraints are met, proceeds in parallel (simulated) and then evaluates
                 if state.get("hard_constraints_met"):
+                    # Run subsequent nodes
                     state.update(asyncio.run(commuter_node(state)))
-                    st.write("🚗 **Google Maps:** Commuting calculation completed.")
+                    st.write("🚗 **Maps:** Commute calculated.")
                     
                     state.update(asyncio.run(osint_node(state)))
-                    st.write("🌍 **Tavily OSINT:** Neighborhood analysis completed.")
+                    st.write("🌍 **OSINT:** Neighborhood analyzed.")
                     
                     state.update(asyncio.run(financial_node(state)))
-                    st.write("💰 **Financial:** Mortgage simulation and target price calculated.")
-
-                    st.write("✍️ **AI Evaluator:** Drafting final report...")
+                    st.write("💰 **Financial:** Mortgage simulated.")
+                    
+                    st.write("⚙️ **Engine:** Parallel calculations completed.")
+                    
                     state.update(asyncio.run(evaluator_node(state)))
-
-                    st.write("🤝 **Negotiator:** Drafting negotiation email...")
+                    st.write("✍️ **Evaluator:** Report drafted.")
+                    
                     state.update(asyncio.run(negotiator_node(state)))
-                    
+                    st.write("🤝 **Negotiator:** Email generated.")
+                
                 final_output = state
-                status.update(label="Analysis successfully completed!", state="complete", expanded=False)
             else:
-                # Starts the graph normally
-                initial_state = {
-                    "target_url": target_url,
-                    "user_office_address": user_office_address,
-                    "max_budget": max_budget,
-                    "down_payment": down_payment,
-                    "interest_rate": interest_rate / 100.0, # convert to decimal
-                    "loan_term_years": loan_term_years
-                }
-                
+                initial_state["target_url"] = target_url
                 final_output = asyncio.run(run_langgraph_stream(initial_state))
-                
-                status.update(label="Analysis successfully completed!", state="complete", expanded=False)
+            
+            status.update(label="Analysis Complete!", state="complete", expanded=False)
 
-            # Results Display Section
-            st.divider()
-            st.header("📊 Analysis Results")
+        # ─────────────────────────────────────────────────────────────────────────────
+        # 7. RESULTS DISPLAY
+        # ─────────────────────────────────────────────────────────────────────────────
+        st.markdown('<div class="section-title">📊 Analysis Results</div>', unsafe_allow_html=True)
+        
+        params = final_output.get("extracted_parameters")
+        
+        if params is None:
+            st.error(final_output.get("evaluation_report", "❌ Analysis failed. The listing might be inaccessible."))
+        elif not final_output.get("hard_constraints_met"):
+            price = getattr(params, "price", 0)
+            st.warning(f"⚠️ Property exceeds budget. Price: € {price:,.0f}".replace(",", "."))
+        else:
+            # Metrics Row
+            score = final_output.get("final_score", 0)
+            price = getattr(params, "price", 0)
+            commute = final_output.get("commute_data")
+            time = f"{commute.transit_time_mins} min" if commute else "N/A"
+            osint = final_output.get("osint_data")
             
-            params = final_output.get("extracted_parameters")
-            
-            if params is None:
-                err_msg = final_output.get("evaluation_report", "❌ Unable to analyze the property. The text might be blocked (403) or invalid.")
-                st.error(err_msg)
-            elif not final_output.get("hard_constraints_met"):
-                st.warning("⚠️ The property does not meet the hard constraints (e.g., exceeds maximum budget). Analysis aborted.")
-                if params:
-                    price = getattr(params, "price", "N/A")
-                    price_str = f"€ {price:,.2f}".replace(",", ".") if price != "N/A" and price is not None else "N/A"
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <h3>Extracted Price</h3>
-                        <h2>{price_str}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
+            # Neighborhood Score calculation for UI (0-100)
+            if osint:
+                neigh_score = int(((osint.safety_score + 1) * 50 * 0.5) + (osint.amenities_score * 100 * 0.5))
+                neigh_label = f"{neigh_score}/100"
             else:
-                st.success("✅ Analysis successfully completed!")
-                
-                # Create a row of 4 columns for key metrics
-                m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-                
-                # 1. Score
-                score = final_output.get("final_score", 0)
-                with m_col1:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <h3>Score</h3>
-                        <h2>{score} / 100</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                # 2. Price
-                price = getattr(params, "price", "N/A")
-                price_str = f"€ {price:,.2f}".replace(",", ".") if price != "N/A" and price is not None else "N/A"
-                with m_col2:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <h3>Price</h3>
-                        <h2>{price_str}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                # 3. Distance (Commute)
-                commute = final_output.get("commute_data")
-                dist_str = f"{commute.transit_time_mins} min" if commute and getattr(commute, 'transit_time_mins', None) is not None else "N/A"
-                with m_col3:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <h3>Office Distance</h3>
-                        <h2>{dist_str}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                # 4. Security/Fiber (OSINT)
-                osint = final_output.get("osint_data")
-                # Extract a summary datum for security/fiber
-                osint_str = osint.broadband_type if osint and getattr(osint, 'broadband_type', None) else "N/A"
-                with m_col4:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <h3>Connectivity</h3>
-                        <h2>{osint_str}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Executive Summary
-                st.subheader("📝 Executive Summary")
-                report = final_output.get("evaluation_report", "")
-                
-                # Use report-box
-                st.markdown(f"""
-                <div class="report-box">
-                    {report}
+                neigh_label = "N/A"
+
+            st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-card">
+                    <div class="metric-label">Investment Score</div>
+                    <div class="metric-value" style="color: #059669;">{score}/100</div>
                 </div>
-                """, unsafe_allow_html=True)
+                <div class="metric-card">
+                    <div class="metric-label">Asking Price</div>
+                    <div class="metric-value">€ {price:,.0f}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Commute Time</div>
+                    <div class="metric-value">{time}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Neighborhood</div>
+                    <div class="metric-value">{neigh_label}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                # Financial & Mortgage Analysis
-                st.subheader("📊 Financial & Mortgage Analysis")
-                fin_data = final_output.get("financial_data", {})
-                if fin_data:
-                    col_fin1, col_fin2 = st.columns(2)
-                    
-                    orig_price = fin_data.get("original_price", 0)
-                    orig_inst = fin_data.get("original_installment", 0)
-                    disc_price = fin_data.get("discounted_price", 0)
-                    disc_inst = fin_data.get("discounted_installment", 0)
-                    disc_perc = fin_data.get("discount_percentage", 12)
-                    
-                    with col_fin1:
-                        st.metric(
-                            label=f"Original Price",
-                            value=f"€ {orig_price:,.2f}".replace(",", "."),
-                            delta=f"Monthly installment: € {orig_inst:,.2f}".replace(",", "."),
-                            delta_color="off"
-                        )
-                    with col_fin2:
-                        st.metric(
-                            label=f"Target Price (-{disc_perc}%)",
-                            value=f"€ {disc_price:,.2f}".replace(",", "."),
-                            delta=f"Monthly installment: € {disc_inst:,.2f}".replace(",", "."),
-                            delta_color="normal"
-                        )
-                else:
-                    st.info("Financial data not available.")
+            # Report
+            st.markdown('<div class="section-title">📝 Executive Summary</div>', unsafe_allow_html=True)
+            report_md = final_output.get("evaluation_report", "")
+            st.markdown(f'<div class="report-box">{report_md}</div>', unsafe_allow_html=True)
 
-                # Generated Negotiation Email
-                st.subheader("✉️ Generated Negotiation Email")
-                email_content = final_output.get("negotiation_email", "")
-                if email_content:
-                    st.info(email_content)
-                else:
-                    st.warning("Negotiation email not generated.")
+            # Financials
+            st.markdown('<div class="section-title">💰 Financial Projection</div>', unsafe_allow_html=True)
+            fin = final_output.get("financial_data", {})
+            if fin:
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.info(f"**Original Monthly Installment**\n\n€ {fin.get('original_installment', 0):,.2f}")
+                with c2:
+                    st.success(f"**Target Price Monthly Installment (-{fin.get('discount_percentage', 0)}%)**\n\n€ {fin.get('discounted_installment', 0):,.2f}")
+
+            # Negotiation Email
+            st.markdown('<div class="section-title">✉️ Negotiation Strategy</div>', unsafe_allow_html=True)
+            email = final_output.get("negotiation_email", "")
+            with st.container():
+                st.code(email, language="markdown")
