@@ -64,10 +64,11 @@ app = graph.compile()
 
 if __name__ == "__main__":
     import asyncio
-
     from dotenv import load_dotenv
+    from src.core.logging_config import setup_logging
 
     load_dotenv()
+    setup_logging()
 
     # Create an initial test state
     initial_state = {

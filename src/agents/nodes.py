@@ -17,10 +17,6 @@ from src.core.state import (
     StructuralParameters,
 )
 
-# Logging Configuration
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 
@@ -149,15 +145,15 @@ async def scraper_node(state: PropertyState) -> dict:
     Returns:
         dict: Updated state with the raw listing text.
     """
-    logger.info("[Scraper Agent] Fetching listing text from the web via Jina Reader...")
     url = state.get("target_url")
     if not url:
         logger.error("[Scraper Agent] target_url missing in state.")
         return {"raw_listing_text": "ERROR:SCRAPING_BLOCKED"}
 
+    logger.info(f"[Scraper Agent] Fetching listing text from: {url}")
     try:
         text = await fetch_jina_reader(url)
-        logger.info("[Scraper Agent] Text successfully extracted from page!")
+        logger.info(f"[Scraper Agent] Successfully extracted {len(text)} characters.")
         return {"raw_listing_text": text}
     except (httpx.HTTPStatusError, httpx.RequestError) as e:
         logger.error(f"[Scraper Agent] Error during GET request: {e}")
@@ -217,7 +213,9 @@ async def data_extractor_node(state: PropertyState) -> dict:
         ):
             is_go = True
 
-        logger.info("[Data Extractor] Data successfully extracted!")
+        logger.info(
+            f"[Data Extractor] Extraction complete. Price: €{price}, Address: {extracted_data.property_address}, Hard Constraints Met: {is_go}"
+        )
         return {"extracted_parameters": extracted_data, "hard_constraints_met": is_go}
     except ValidationError as e:
         logger.error(f"[Data Extractor] Pydantic Validation Error: {e}")
@@ -459,6 +457,10 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
             1,
         )
 
+        logger.info(
+            f"[Evaluator Agent] Scoring completed. Final Score: {final_score}/100. (Price: {score_price}, Quality: {score_spatial}, Commute: {score_commute}, OSINT: {score_osint})"
+        )
+
         # LLM Executive Summary
         llm_pro = get_llm(model=DEFAULT_PRO_MODEL, temperature=0.2)
 
@@ -532,7 +534,9 @@ async def financial_node(state: PropertyState) -> dict:
     P2 = discounted_price - down_payment
     M2 = calculate_installment(P2, r, n)
 
-    logger.info("[Financial Agent] Calculations completed!")
+    logger.info(
+        f"[Financial Agent] Mortgage simulated. Original Installment: €{M1:.2f}, Target Installment: €{M2:.2f}"
+    )
     return {
         "financial_data": {
             "original_price": price,

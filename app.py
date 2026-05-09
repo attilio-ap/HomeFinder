@@ -14,6 +14,10 @@ from src.agents.nodes import (
 )
 from src.core.graph import app as graph_app
 from src.core.state import PropertyState
+from src.core.logging_config import setup_logging
+
+# Initialize Logging
+setup_logging()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. PAGE CONFIGURATION
