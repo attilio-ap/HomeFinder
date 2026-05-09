@@ -1,5 +1,3 @@
-import os
-
 # --- LLM Model Configurations ---
 # Using Gemini Flash Lite for cost-effective extraction and simple tasks
 DEFAULT_LITE_MODEL = "gemini-flash-lite-latest"
