@@ -1,5 +1,6 @@
 # 🏢 Home Finder
 
+![CI Pipeline](https://github.com/attilio-ap/HomeFinder/actions/workflows/ci.yml/badge.svg)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_Workflow-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
