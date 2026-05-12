@@ -1,3 +1,9 @@
+"""
+Orchestration layer for the HomeFinder multi-agent system.
+
+This module defines the LangGraph state machine, connecting various agent nodes
+(scraper, extractor, osint, etc.) into a cohesive workflow for real estate analysis.
+"""
 import pprint
 from typing import List, Union
 
@@ -16,10 +22,17 @@ from src.core.state import PropertyState
 
 
 def route_after_extraction(state: PropertyState) -> Union[List[str], str]:
-    """
-    Reads the state after extraction.
-    If extraction failed (None) or hard constraints are not met (False), terminates the graph.
-    If they are met, continues to the parallel execution.
+    """Conditional router to determine the next steps after data extraction.
+
+    If extraction failed or hard constraints (e.g., budget) are not met,
+    the workflow terminates early. Otherwise, it triggers parallel execution
+    of logistical and environmental analysis.
+
+    Args:
+        state (PropertyState): The current global state of the analysis.
+
+    Returns:
+        Union[List[str], str]: Next node(s) to execute or END.
     """
     if not state.get("extracted_parameters") or not state.get("hard_constraints_met"):
         return END

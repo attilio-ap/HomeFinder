@@ -29,6 +29,17 @@
     margin-bottom: 8px !important;
 }
 
+/* Expander Styling */
+div[data-testid="stExpander"] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stExpander"] summary, div[data-testid="stExpander"] summary * {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+}
+
 /* Premium Header */
 .premium-header {
     text-align: center;
@@ -113,21 +124,38 @@ div[data-testid="stStatusWidget"] * {
     font-size: 1.1rem !important;
     box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.3) !important;
     transition: all 0.3s ease !important;
+    color: #FFFFFF !important;
 }
 .stButton > button[kind="primary"]:hover {        
-    transform: translateY(-2px);
+    transform: translateY(-2px) !important;
     box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.4) !important;
+    color: #FFFFFF !important;
+    border: none !important;
 }
 
 /* Report Box */
 .report-box {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-left: 5px solid #0F172A;
-    border-radius: 12px;
-    padding: 2rem;
-    color: #1E293B;
-    line-height: 1.8;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-left: 5px solid #0F52BA !important;
+    border-radius: 12px !important;
+    padding: 2rem !important;
+    color: #0F172A !important;
+    line-height: 1.8 !important;
+    font-size: 1.1rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+}
+.report-box * {
+    color: #0F172A !important;
+}
+
+/* Fix Code Blocks and Preformatted Text in Streamlit */
+div[data-testid="stCodeBlock"] {
+    background-color: #1E293B !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+}
+div[data-testid="stCodeBlock"] code {
+    color: #F8FAFC !important;
+    font-family: monospace !important;
 }

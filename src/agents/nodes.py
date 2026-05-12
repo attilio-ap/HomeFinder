@@ -1,7 +1,15 @@
+"""
+Collection of agent nodes for the HomeFinder graph.
+
+Each function in this module represents a discrete step in the property analysis
+workflow, ranging from web scraping and data extraction to financial modeling
+and negotiation email generation. These nodes are designed to be executed within
+a LangGraph StateGraph.
+"""
 import asyncio
 import logging
 import os
-from typing import Any, Dict, cast, Optional
+from typing import Any, Dict, cast, Optional, Union, List
 
 import httpx
 from langchain_core.prompts import ChatPromptTemplate
@@ -20,14 +28,29 @@ from src.core.state import (
 logger = logging.getLogger(__name__)
 
 
+# --- Helper to extract string from AIMessage content ---
+def _extract_text_content(content: Union[str, List[Union[str, dict]]]) -> str:
+    """Helper to consistently extract text from Langchain message content."""
+    if isinstance(content, str):
+        return content
+    elif isinstance(content, list):
+        texts = []
+        for block in content:
+            if isinstance(block, str):
+                texts.append(block)
+            elif isinstance(block, dict) and "text" in block:
+                texts.append(block["text"])
+        return "\n".join(texts)
+    return str(content)
+
+
 # --- Factory for LLM (DRY) ---
 def get_llm(model: str = DEFAULT_LITE_MODEL, temperature: float = 0) -> ChatGoogleGenerativeAI:
-    """
-    Initializes and returns an instance of the ChatGoogleGenerativeAI LLM.
+    """Initializes and returns an instance of the ChatGoogleGenerativeAI LLM.
 
     Args:
-        model (str): The name of the Gemini model to use. Defaults to DEFAULT_LITE_MODEL.
-        temperature (float): The sampling temperature to use. Defaults to 0.
+        model: The name of the Gemini model to use. Defaults to DEFAULT_LITE_MODEL.
+        temperature: The sampling temperature to use. Defaults to 0.
 
     Returns:
         ChatGoogleGenerativeAI: An instance of the LLM.
@@ -43,11 +66,12 @@ def get_llm(model: str = DEFAULT_LITE_MODEL, temperature: float = 0) -> ChatGoog
     reraise=True,
 )
 async def fetch_jina_reader(url: str) -> str:
-    """
-    Fetches the text content of a web page using the Jina Reader API with automatic retries.
+    """Fetches the text content of a web page using the Jina Reader API.
+
+    Uses tenacity for automatic retries on network or HTTP errors.
 
     Args:
-        url (str): The URL of the property listing to scrape.
+        url: The URL of the property listing to scrape.
 
     Returns:
         str: The extracted text content of the page.
@@ -66,13 +90,12 @@ async def fetch_jina_reader(url: str) -> str:
     reraise=True,
 )
 async def fetch_google_maps(origin: str, destination: str, api_key: str) -> Dict[str, Any]:
-    """
-    Fetches distance and travel time data from the Google Maps Distance Matrix API with retries.
+    """Fetches distance and travel time data from the Google Maps Distance Matrix API.
 
     Args:
-        origin (str): The starting address (property location).
-        destination (str): The destination address (user office).
-        api_key (str): Google Maps API key.
+        origin: The starting address (property location).
+        destination: The destination address (user office).
+        api_key: Google Maps API key.
 
     Returns:
         Dict[str, Any]: The JSON response from the Google Maps API.
@@ -92,12 +115,11 @@ async def fetch_google_maps(origin: str, destination: str, api_key: str) -> Dict
     reraise=True,
 )
 async def fetch_tavily(query: str, api_key: str) -> Dict[str, Any]:
-    """
-    Performs a search query using the Tavily API with retries.
+    """Performs a search query using the Tavily API.
 
     Args:
-        query (str): The search query for neighborhood information.
-        api_key (str): Tavily API key.
+        query: The search query for neighborhood information.
+        api_key: Tavily API key.
 
     Returns:
         Dict[str, Any]: The JSON response from the Tavily API.
@@ -113,7 +135,15 @@ async def fetch_tavily(query: str, api_key: str) -> Dict[str, Any]:
 
 # --- Internal Pydantic Models ---
 class OsintAnalysis(BaseModel):
-    """Internal model for structured neighborhood analysis."""
+    """Internal model for structured neighborhood analysis evaluating multiple urban factors.
+
+    Attributes:
+        safety_score: Safety score from -1.0 (dangerous) to 1.0 (safe).
+        noise_level: Noise level score from -1.0 (noisy) to 1.0 (quiet).
+        public_transport_score: Accessibility from 0.0 (poor) to 1.0 (excellent).
+        amenities_score: Local services from 0.0 (poor) to 1.0 (excellent).
+        broadband_type: Predominant connection type, e.g., FTTH.
+    """
 
     safety_score: float = Field(
         description="Safety score from -1.0 (very dangerous) to 1.0 (very safe)"
@@ -136,14 +166,13 @@ class OsintAnalysis(BaseModel):
 
 
 async def scraper_node(state: PropertyState) -> dict:
-    """
-    Scrapes the property listing text from the provided URL.
+    """Scrapes the property listing text from the provided URL.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing target_url.
 
     Returns:
-        dict: Updated state with the raw listing text.
+        dict: Updated state with the raw listing text or error code.
     """
     url = state.get("target_url")
     if not url:
@@ -161,25 +190,39 @@ async def scraper_node(state: PropertyState) -> dict:
 
 
 async def data_extractor_node(state: PropertyState) -> dict:
-    """
-    Extracts structured parameters from the raw listing text using LLM.
+    """Extracts structured parameters from raw listing text using a Gemini LLM.
+
+    Validates if hard constraints (e.g., maximum budget) are met.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing raw_listing_text.
 
     Returns:
-        dict: Updated state with extracted parameters and constraint check.
+        dict: Updated state with extracted_parameters and hard_constraints_met flag.
     """
     logger.info("[Data Extractor] Analyzing listing...")
 
     raw_listing_text = state.get("raw_listing_text", "")
-    if (
-        "ERROR:SCRAPING_BLOCKED" in raw_listing_text
-        or "403" in raw_listing_text
-        or "Forbidden" in raw_listing_text
-        or len(raw_listing_text) < 50
-    ):
-        logger.warning("[Data Extractor] Invalid or blocked text. Aborting extraction.")
+    
+    # Heuristics to detect blocked scraping
+    is_blocked = False
+    block_reason = ""
+    
+    if "ERROR:SCRAPING_BLOCKED" in raw_listing_text:
+        is_blocked = True
+        block_reason = "Internal scraping error"
+    elif len(raw_listing_text) < 50:
+        is_blocked = True
+        block_reason = f"Text too short ({len(raw_listing_text)} chars)"
+    elif len(raw_listing_text) < 1000:
+        # For short-ish texts, check for common block keywords
+        if "403" in raw_listing_text or "Forbidden" in raw_listing_text or "Access Denied" in raw_listing_text:
+            is_blocked = True
+            block_reason = "Anti-bot block detected (403/Forbidden)"
+
+    if is_blocked:
+        snippet = raw_listing_text[:100].replace("\n", " ")
+        logger.warning(f"[Data Extractor] {block_reason}. Snippet: [{snippet}...]")
         return {"extracted_parameters": None, "hard_constraints_met": False}
 
     llm = get_llm(model=DEFAULT_LITE_MODEL)
@@ -226,14 +269,13 @@ async def data_extractor_node(state: PropertyState) -> dict:
 
 
 async def commuter_node(state: PropertyState) -> Dict[str, Any]:
-    """
-    Calculates commute time and distance using Google Maps API.
+    """Calculates commute time and distance using Google Maps API.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing property and office addresses.
 
     Returns:
-        Dict[str, Any]: Updated state with commute data.
+        Dict[str, Any]: Updated state with commute_data.
     """
     logger.info("[Commuter Agent] Calculating route on Google Maps...")
 
@@ -285,14 +327,13 @@ async def commuter_node(state: PropertyState) -> Dict[str, Any]:
 
 
 async def osint_node(state: PropertyState) -> Dict[str, Any]:
-    """
-    Researches neighborhood details via Tavily and evaluates them with LLM.
+    """Researches neighborhood details via Tavily and evaluates them with LLM.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing property address.
 
     Returns:
-        Dict[str, Any]: Updated state with OSINT data.
+        Dict[str, Any]: Updated state with osint_data.
     """
     logger.info("[OSINT Agent] Researching neighborhood information via Tavily...")
 
@@ -379,14 +420,13 @@ async def osint_node(state: PropertyState) -> Dict[str, Any]:
 
 
 async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
-    """
-    Aggregates all data and calculates a final investment score and executive summary.
+    """Aggregates all data and calculates a final investment score and executive summary.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing all collected analysis data.
 
     Returns:
-        Dict[str, Any]: Updated state with final score and report.
+        Dict[str, Any]: Updated state with final_score and evaluation_report.
     """
     logger.info("[Evaluator Agent] Processing score and drafting final report...")
 
@@ -482,8 +522,10 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
             {"params": params, "commute": commute, "osint": osint, "final_score": final_score}
         )
 
+        report_text = _extract_text_content(response.content)
+
         logger.info("[Evaluator Agent] Report generated successfully!")
-        return {"final_score": final_score, "evaluation_report": response.content}
+        return {"final_score": final_score, "evaluation_report": report_text}
 
     except Exception as e:
         logger.error(f"[Evaluator Agent] Error: {e}")
@@ -491,14 +533,13 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
 
 
 async def financial_node(state: PropertyState) -> dict:
-    """
-    Calculates mortgage amortization and installment based on financial parameters.
+    """Calculates mortgage amortization and installment based on financial parameters.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing price and financial inputs.
 
     Returns:
-        dict: Updated state with financial calculations.
+        dict: Updated state with financial_data.
     """
     logger.info("[Financial Agent] Calculating mortgage amortization and installment...")
 
@@ -549,14 +590,13 @@ async def financial_node(state: PropertyState) -> dict:
 
 
 async def negotiator_node(state: PropertyState) -> dict:
-    """
-    Generates a formal negotiation email based on the evaluation and financial data.
+    """Generates a formal negotiation email based on evaluation and financial data.
 
     Args:
-        state (PropertyState): The current graph state.
+        state: The current graph state containing evaluation report and financial data.
 
     Returns:
-        dict: Updated state with the negotiation email.
+        dict: Updated state with negotiation_email.
     """
     logger.info("[Negotiator Agent] Generating negotiation email...")
 
@@ -591,8 +631,9 @@ async def negotiator_node(state: PropertyState) -> dict:
         response = await chain.ainvoke(
             {"listing": raw_listing_text, "report": evaluation_report, "finance": financial_data}
         )
+        email_text = _extract_text_content(response.content)
         logger.info("[Negotiator Agent] Email generated successfully!")
-        return {"negotiation_email": response.content}
+        return {"negotiation_email": email_text}
     except Exception as e:
         logger.error(f"[Negotiator Agent] LLM Generation Error: {e}")
         return {}

@@ -5,11 +5,22 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_Workflow-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+![Status](https://img.shields.io/badge/Status-Work_in_Progress-orange)
 
 ## 🚀 Your Personal AI Real Estate Analyst
 
 **Home Finder** is an advanced multi-agent system that transforms a simple property listing link into a comprehensive *due-diligence*. Through a graph architecture, artificial intelligence extracts data, evaluates logistics, analyzes the neighborhood context via OSINT, simulates the financial plan, and drafts a strategic negotiation email based on the property's actual flaws. All in just a few seconds.
+
+---
+
+## 📸 Demo & Preview
+
+> [!IMPORTANT]
+> **Demo GIF and Screenshots coming soon!**
+
+| Analysis Workflow | Financial Dashboard |
+| :---: | :---: |
+| ![Analysis Workflow Placeholder](https://via.placeholder.com/600x400?text=Analysis+Workflow+GIF) | ![Financial Dashboard Placeholder](https://via.placeholder.com/600x400?text=Financial+Dashboard+Screenshot) |
 
 ---
 
@@ -65,7 +76,24 @@ The project is built on the best modern technologies for AI and web development:
 
 ## ⚙️ Setup and Installation
 
-Follow these steps to configure your local environment and run the application.
+### 🐳 Option A: Docker (Recommended)
+The fastest way to get Home Finder running is using Docker.
+
+1. **Clone and Navigate**
+   ```bash
+   git clone https://github.com/attilio-ap/HomeFinder.git
+   cd HomeFinder
+   ```
+2. **Configure Environment**
+   Create a `.env` file and add your API keys.
+3. **Run with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+   The app will be available at `http://localhost:8501`.
+
+### 🐍 Option B: Local Python Environment
+Follow these steps to configure your local environment manually.
 
 **1. Clone the repository**
 ```bash
@@ -86,7 +114,6 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-*(Ensure that key packages like `streamlit`, `langgraph`, `langchain-google-genai`, `pydantic`, `requests`, `python-dotenv` are included in `requirements.txt`).*
 
 **4. Configure Environment Variables**
 Create a `.env` file in the project root and insert your API keys:
