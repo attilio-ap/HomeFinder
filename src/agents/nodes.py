@@ -6,10 +6,11 @@ workflow, ranging from web scraping and data extraction to financial modeling
 and negotiation email generation. These nodes are designed to be executed within
 a LangGraph StateGraph.
 """
+
 import asyncio
 import logging
 import os
-from typing import Any, Dict, cast, Optional, Union, List
+from typing import Any, Dict, List, Union, cast
 
 import httpx
 from langchain_core.prompts import ChatPromptTemplate
@@ -130,6 +131,7 @@ async def fetch_tavily(query: str, api_key: str) -> Dict[str, Any]:
         response = await client.post(url, json=payload)
         response.raise_for_status()
         import typing
+
         return typing.cast(Dict[str, Any], response.json())
 
 
@@ -203,11 +205,11 @@ async def data_extractor_node(state: PropertyState) -> dict:
     logger.info("[Data Extractor] Analyzing listing...")
 
     raw_listing_text = state.get("raw_listing_text", "")
-    
+
     # Heuristics to detect blocked scraping
     is_blocked = False
     block_reason = ""
-    
+
     if "ERROR:SCRAPING_BLOCKED" in raw_listing_text:
         is_blocked = True
         block_reason = "Internal scraping error"
@@ -216,7 +218,11 @@ async def data_extractor_node(state: PropertyState) -> dict:
         block_reason = f"Text too short ({len(raw_listing_text)} chars)"
     elif len(raw_listing_text) < 1000:
         # For short-ish texts, check for common block keywords
-        if "403" in raw_listing_text or "Forbidden" in raw_listing_text or "Access Denied" in raw_listing_text:
+        if (
+            "403" in raw_listing_text
+            or "Forbidden" in raw_listing_text
+            or "Access Denied" in raw_listing_text
+        ):
             is_blocked = True
             block_reason = "Anti-bot block detected (403/Forbidden)"
 
@@ -249,11 +255,7 @@ async def data_extractor_node(state: PropertyState) -> dict:
         budget = state.get("max_budget")
         is_go = False
         price = getattr(extracted_data, "price", None)
-        if (
-            budget is not None
-            and price is not None
-            and price <= budget
-        ):
+        if budget is not None and price is not None and price <= budget:
             is_go = True
 
         logger.info(
@@ -455,7 +457,9 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
         # 2. Spatial & Quality Score (25%)
         # Base: SQM (benchmark_sqm as benchmark)
         score_spatial = (
-            (params.sqm / benchmark_sqm) * 80 if params and params.sqm is not None and params.sqm > 0 else 0
+            (params.sqm / benchmark_sqm) * 80
+            if params and params.sqm is not None and params.sqm > 0
+            else 0
         )
         # Bonus: Energy Class (A=20, B=15, C=10, others=0)
         e_class = (params.energy_class or "G").upper()
@@ -465,7 +469,9 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
         score_spatial = min(score_spatial + e_bonus, 100)
 
         # 3. Logistics & Commute (25%)
-        transit_time_mins = commute.transit_time_mins if commute and commute.transit_time_mins is not None else 999
+        transit_time_mins = (
+            commute.transit_time_mins if commute and commute.transit_time_mins is not None else 999
+        )
         if transit_time_mins < 25:
             score_commute = 100
         elif transit_time_mins < 40:
@@ -477,7 +483,12 @@ async def evaluator_node(state: PropertyState) -> Dict[str, Any]:
 
         # 4. OSINT / Neighborhood (15%)
         # Internal Weights: Safety 40%, Amenities 35%, Noise 20%, Fiber 5%
-        if osint and osint.safety_score is not None and osint.amenities_score is not None and osint.noise_level is not None:
+        if (
+            osint
+            and osint.safety_score is not None
+            and osint.amenities_score is not None
+            and osint.noise_level is not None
+        ):
             s_safety = (osint.safety_score + 1) * 50  # Normalize -1..1 to 0..100
             s_amenities = osint.amenities_score * 100
             s_noise = (osint.noise_level + 1) * 50

@@ -1,6 +1,6 @@
 import os
-from unittest.mock import AsyncMock, patch
 from typing import Any, Dict, cast
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -10,7 +10,7 @@ from src.agents.nodes import (
     osint_node,
     scraper_node,
 )
-from src.core.state import StructuralParameters, PropertyState
+from src.core.state import PropertyState, StructuralParameters
 
 
 @pytest.mark.asyncio

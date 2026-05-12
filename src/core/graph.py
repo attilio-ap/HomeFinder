@@ -4,6 +4,7 @@ Orchestration layer for the HomeFinder multi-agent system.
 This module defines the LangGraph state machine, connecting various agent nodes
 (scraper, extractor, osint, etc.) into a cohesive workflow for real estate analysis.
 """
+
 import pprint
 from typing import List, Union
 
@@ -77,7 +78,9 @@ app = graph.compile()
 
 if __name__ == "__main__":
     import asyncio
+
     from dotenv import load_dotenv
+
     from src.core.logging_config import setup_logging
 
     load_dotenv()
@@ -96,7 +99,8 @@ if __name__ == "__main__":
     print("Starting LangGraph processing...\n")
 
     # Launch graph execution
-    from typing import cast, Any
+    from typing import Any, cast
+
     final_output = asyncio.run(app.ainvoke(cast(Any, initial_state)))
 
     # Print the final output dictionary to the screen using pprint

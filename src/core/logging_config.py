@@ -3,6 +3,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+
 def setup_logging(log_level: int = logging.INFO) -> None:
     """
     Configures a professional logging system with console and file output.
@@ -15,8 +16,7 @@ def setup_logging(log_level: int = logging.INFO) -> None:
     # Define the professional format
     # Example: 2026-05-09 12:00:00 - agents.nodes - INFO - [Scraper Agent] Message
     log_format = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # Console Handler
@@ -24,18 +24,16 @@ def setup_logging(log_level: int = logging.INFO) -> None:
     console_handler.setFormatter(log_format)
 
     # Rotating File Handler (10MB per file, keeping 5 backups)
-    file_handler = RotatingFileHandler(
-        log_file, maxBytes=10 * 1024 * 1024, backupCount=5
-    )
+    file_handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
     file_handler.setFormatter(log_format)
 
     # Root Logger Configuration
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
-    
+
     # Remove existing handlers to avoid duplicates if setup is called multiple times
     root_logger.handlers = []
-    
+
     root_logger.addHandler(console_handler)
     root_logger.addHandler(file_handler)
 

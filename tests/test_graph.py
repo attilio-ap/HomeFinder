@@ -1,13 +1,13 @@
 import os
-from unittest.mock import AsyncMock, patch
 from typing import Any, Dict, cast
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from langchain_core.runnables import RunnableLambda
 
 from src.agents.nodes import OsintAnalysis
 from src.core.graph import app
-from src.core.state import StructuralParameters, PropertyState
+from src.core.state import StructuralParameters
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,13 @@ async def test_graph_happy_path(mocker: Any, base_state: Dict[str, Any]) -> None
             if schema.__name__ == "StructuralParameters":
                 return RunnableLambda(
                     lambda x: StructuralParameters(
-                        price=300000, sqm=100, property_address="Via Roma 1", floor="2", bedrooms=3, has_elevator=True, energy_class="A",
+                        price=300000,
+                        sqm=100,
+                        property_address="Via Roma 1",
+                        floor="2",
+                        bedrooms=3,
+                        has_elevator=True,
+                        energy_class="A",
                     )
                 )
             elif schema.__name__ == "OsintAnalysis":
