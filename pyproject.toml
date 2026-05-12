@@ -69,7 +69,6 @@ module = [
     "langgraph.*",
     "langchain_core.*",
     "langchain_google_genai.*",
-    "google.generativeai.*",
     "tenacity.*",
     "httpx.*",
 ]

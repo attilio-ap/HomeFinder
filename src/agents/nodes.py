@@ -42,7 +42,6 @@ def _extract_text_content(content: Union[str, List[Union[str, dict]]]) -> str:
             elif isinstance(block, dict) and "text" in block:
                 texts.append(block["text"])
         return "\n".join(texts)
-    return str(content)
 
 
 # --- Factory for LLM (DRY) ---
