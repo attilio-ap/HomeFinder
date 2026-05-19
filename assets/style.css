@@ -2,160 +2,195 @@
 
 #MainMenu, footer, header, .stDeployButton {visibility: hidden; display: none;}
 
+/* Global Styles */
 .stApp { 
-    background-color: #F8FAFC !important; 
+    background-color: #0F172A !important; 
     font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #F8FAFC !important;
 }
 
 .block-container {        
-    max-width: 1100px !important;        
-    padding: 2rem 2rem !important;        
+    max-width: 1200px !important;        
+    padding: 2rem 3rem !important;        
 }
 
-/* Input Styling */
+/* Input Styling - Dark Mode Optimization */
 .stTextInput input, .stNumberInput input, .stTextArea textarea {
-    background-color: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 10px !important;
+    background-color: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
     padding: 12px 16px !important;
-    color: #1E293B !important;
+    transition: all 0.2s ease !important;
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+}
+.stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
+    border-color: #38BDF8 !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1) !important;
 }
 
-/* Labels */
-.stTextInput label, .stNumberInput label, .stTextArea label {
-    color: #64748B !important;
+/* Labels and Markdown */
+label, .stMarkdown p, .stMarkdown li, span {
+    color: #F8FAFC !important;
+}
+
+label {
+    color: #94A3B8 !important;
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.025em !important;
     margin-bottom: 8px !important;
 }
 
-/* Expander Styling */
-div[data-testid="stExpander"] {
-    background-color: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 12px !important;
+/* Tabs Styling - Dark Mode */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    background-color: transparent;
+    padding: 10px 0;
 }
-div[data-testid="stExpander"] summary, div[data-testid="stExpander"] summary * {
-    color: #0F172A !important;
-    font-weight: 600 !important;
+
+.stTabs [data-baseweb="tab"] {
+    height: 45px;
+    white-space: pre-wrap;
+    background-color: #1E293B;
+    border-radius: 10px 10px 0 0;
+    gap: 1px;
+    padding: 10px 20px;
+    border: 1px solid #334155;
+    font-weight: 600;
+    color: #94A3B8 !important;
+    transition: all 0.2s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: #38BDF8 !important;
+    background-color: #334155;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: #334155 !important;
+    color: #38BDF8 !important;
+    border-bottom: 2px solid #38BDF8 !important;
 }
 
 /* Premium Header */
 .premium-header {
     text-align: center;
-    margin-bottom: 3rem;
-    padding-top: 1rem;
+    margin-bottom: 4rem;
+    padding: 2rem 0;
 }
 .premium-header h1 {
-    font-size: 3.5rem !important;
+    font-size: 4rem !important;
     font-weight: 800 !important;
-    color: #0F172A !important;
-    letter-spacing: -0.04em;
+    color: #FFFFFF !important;
+    letter-spacing: -0.05em;
     margin-bottom: 0.5rem !important;
 }
 .premium-header p {
-    color: #64748B !important;
+    color: #94A3B8 !important;
     font-size: 1.25rem;
     font-weight: 400;
 }
 
 /* Section Titles */
 .section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #0F172A !important;
-    margin: 2rem 0 1rem 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    margin: 3rem 0 1.5rem 0;
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-/* Metric Cards */
+/* Metric Cards - Dark Mode Glow */
 .metric-container {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
 }
 .metric-card {
-    background: #FFFFFF;
-    padding: 1.5rem;
-    border-radius: 16px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background: #1E293B;
+    padding: 1.75rem;
+    border-radius: 20px;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     flex: 1;
-    transition: transform 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+    border-color: #38BDF8;
 }
 .metric-label {
-    color: #64748B;
-    font-size: 0.85rem;
-    font-weight: 600;
+    color: #94A3B8 !important;
+    font-size: 0.75rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
 }
 .metric-value {
-    color: #0F172A;
-    font-size: 1.75rem;
-    font-weight: 700;
+    color: #38BDF8 !important;
+    font-size: 2.25rem;
+    font-weight: 800;
 }
 
-/* Status Widget Customization */
-div[data-testid="stStatusWidget"] {
-    background-color: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+/* Report Box - Dark Mode */
+.report-box {
+    background: #1E293B !important;
+    border-radius: 20px !important;
+    padding: 2.5rem !important;
+    color: #E2E8F0 !important;
+    line-height: 1.8 !important;
+    font-size: 1.05rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid #334155 !important;
 }
-div[data-testid="stStatusWidget"] * {
-    color: #1E293B !important;
-}
-
-/* Primary Button */
-.stButton > button[kind="primary"] {        
-    background: linear-gradient(135deg, #0F172A 0%, #334155 100%) !important;        
-    border: none !important;        
-    border-radius: 12px !important;        
-    padding: 0.75rem 2rem !important;        
-    font-weight: 600 !important;
-    font-size: 1.1rem !important;
-    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.3) !important;
-    transition: all 0.3s ease !important;
+.report-box h1, .report-box h2, .report-box h3 {
     color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+.report-box p, .report-box li {
+    color: #E2E8F0 !important;
+}
+
+/* Info/Success Boxes Customization */
+div.stAlert {
+    background-color: #1E293B !important;
+    border-radius: 15px !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+div.stAlert p {
+    color: #F8FAFC !important;
+}
+
+/* Primary Button - Electric Blue */
+.stButton > button[kind="primary"] {        
+    background: #38BDF8 !important;        
+    border-radius: 14px !important;        
+    padding: 0.85rem 2.5rem !important;        
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    color: #0F172A !important;
 }
 .stButton > button[kind="primary"]:hover {        
-    transform: translateY(-2px) !important;
-    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.4) !important;
-    color: #FFFFFF !important;
-    border: none !important;
+    background: #7DD3FC !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.4) !important;
 }
 
-/* Report Box */
-.report-box {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-left: 5px solid #0F52BA !important;
-    border-radius: 12px !important;
-    padding: 2rem !important;
-    color: #0F172A !important;
-    line-height: 1.8 !important;
-    font-size: 1.1rem !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-}
-.report-box * {
-    color: #0F172A !important;
-}
-
-/* Fix Code Blocks and Preformatted Text in Streamlit */
-div[data-testid="stCodeBlock"] {
+/* Expander - Dark Mode */
+div[data-testid="stExpander"] {
     background-color: #1E293B !important;
+    border: 1px solid #334155 !important;
     border-radius: 12px !important;
-    padding: 1rem !important;
 }
-div[data-testid="stCodeBlock"] code {
+div[data-testid="stExpander"] summary {
     color: #F8FAFC !important;
-    font-family: monospace !important;
 }

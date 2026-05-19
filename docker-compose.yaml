@@ -8,6 +8,10 @@ services:
       - .env
     volumes:
       - ./logs:/app/logs
+      - ./src:/app/src
+      - ./assets:/app/assets
+      - ./.streamlit:/app/.streamlit
+      - ./app.py:/app/app.py
     restart: unless-stopped
 
 networks:

@@ -1,9 +1,26 @@
 # --- LLM Model Configurations ---
-# Using Gemini Flash Lite for cost-effective extraction and simple tasks
-DEFAULT_LITE_MODEL = "gemini-flash-lite-latest"
 
-# Using Gemini Flash for complex reasoning and summary generation
-DEFAULT_PRO_MODEL = "gemini-flash-latest"
+# Google Gemini
+GEMINI_FLASH = "gemini-flash-lite-latest"
+GEMINI_FLASH_LITE = "gemini-flash-lite-latest"
+GEMINI_PRO = "gemini-flash-lite-latest"
+
+# Anthropic Claude
+CLAUDE_HAIKU = "claude-3-haiku-20240307"
+CLAUDE_SONNET = "claude-3-5-sonnet-20240620"
+CLAUDE_OPUS = "claude-3-opus-20240229"
+
+# OpenAI GPT
+GPT_4O = "gpt-4o"
+GPT_4O_MINI = "gpt-4o-mini"
+
+# Moonshot / Kimi
+KIMI_V1_8K = "moonshot-v1-8k"
+KIMI_V1_32K = "moonshot-v1-32k"
+
+# Default Model Selection
+DEFAULT_LITE_MODEL = GEMINI_FLASH_LITE
+DEFAULT_PRO_MODEL = GEMINI_FLASH_LITE
 
 
 # --- UI / Theme ---

@@ -100,6 +100,7 @@ class PropertyState(TypedDict):
         evaluation_report (str): Summarized analysis of the property.
         financial_data (dict): Detailed mortgage and financial breakdown.
         negotiation_email (str): Drafted negotiation email for the user.
+        negotiation_language (str): The language in which to generate the negotiation email.
     """
 
     target_url: str
@@ -112,6 +113,11 @@ class PropertyState(TypedDict):
     down_payment: float
     interest_rate: float
     loan_term_years: int
+    negotiation_language: str
+
+    # Model selection
+    lite_model: Optional[str]
+    pro_model: Optional[str]
 
     # Structured data using Pydantic models
     extracted_parameters: StructuralParameters

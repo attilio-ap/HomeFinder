@@ -12,4 +12,5 @@ def base_state() -> dict[str, Any]:
         "down_payment": 50000.0,
         "interest_rate": 0.035,
         "loan_term_years": 30,
+        "negotiation_language": "Italian",
     }
