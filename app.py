@@ -92,7 +92,9 @@ with f_col3:
 with f_col4:
     loan_term_years = st.number_input("Term (Years)", value=30, min_value=1, max_value=40)
 with f_col5:
-    negotiation_language = st.selectbox("Negotiation Language", ["English", "Italian", "Spanish", "French", "German"])
+    negotiation_language = st.selectbox(
+        "Negotiation Language", ["English", "Italian", "Spanish", "French", "German"]
+    )
 
 st.markdown('<div class="section-title">🤖 AI Configuration</div>', unsafe_allow_html=True)
 ai_col1, ai_col2 = st.columns(2)
@@ -100,7 +102,7 @@ with ai_col1:
     provider = st.selectbox(
         "AI Provider",
         ["Google Gemini", "Anthropic Claude", "OpenAI GPT", "Moonshot Kimi"],
-        help="Select the AI provider to use for the analysis."
+        help="Select the AI provider to use for the analysis.",
     )
 
 # Map provider to specific lite/pro models
@@ -143,22 +145,20 @@ async def run_langgraph_stream(initial_state: Dict[str, Any]) -> Dict[str, Any]:
         Dict[str, Any]: The final state of the graph after completion.
     """
     final_state = initial_state.copy()
+    node_messages = {
+        "scraper_node": "✅ **Scraper:** Content extracted.",
+        "data_extractor_node": "🧠 **AI Extractor:** Data structured.",
+        "commuter_node": "🚗 **Maps:** Commute calculated.",
+        "osint_node": "🌍 **OSINT:** Neighborhood analyzed.",
+        "financial_node": "💰 **Financial:** Mortgage simulated.",
+        "evaluator_node": "✍️ **Evaluator:** Report drafted.",
+        "negotiator_node": "🤝 **Negotiator:** Email generated.",
+    }
+
     async for output in graph_app.astream(cast(Any, initial_state)):
         for node_name, node_state in output.items():
-            if node_name == "scraper_node":
-                st.write("✅ **Scraper:** Content extracted.")
-            elif node_name == "data_extractor_node":
-                st.write("🧠 **AI Extractor:** Data structured.")
-            elif node_name == "commuter_node":
-                st.write("🚗 **Maps:** Commute calculated.")
-            elif node_name == "osint_node":
-                st.write("🌍 **OSINT:** Neighborhood analyzed.")
-            elif node_name == "financial_node":
-                st.write("💰 **Financial:** Mortgage simulated.")
-            elif node_name == "evaluator_node":
-                st.write("✍️ **Evaluator:** Report drafted.")
-            elif node_name == "negotiator_node":
-                st.write("🤝 **Negotiator:** Email generated.")
+            if node_name in node_messages:
+                st.write(node_messages[node_name])
 
             # Robust update: only update if node_state is a dictionary
             if isinstance(node_state, dict):
@@ -287,21 +287,27 @@ if start_analysis:
                     else:
                         st.markdown("### Executive Summary")
                         # Convert markdown to HTML before injecting into the styled div
-                        report_html = markdown.markdown(report_md, extensions=['extra', 'nl2br'])
-                        st.markdown(f'<div class="report-box">{report_html}</div>', unsafe_allow_html=True)
+                        report_html = markdown.markdown(report_md, extensions=["extra", "nl2br"])
+                        st.markdown(
+                            f'<div class="report-box">{report_html}</div>', unsafe_allow_html=True
+                        )
 
                 with col_spec:
                     st.markdown("### Property Specs")
                     spec_items = {
                         "Address": getattr(params, "property_address", "N/A"),
-                        "Price/sqm": f"€ {getattr(params, 'price_per_sqm', 0):,.0f}" if getattr(params, 'price_per_sqm', None) else "N/A",
+                        "Price/sqm": f"€ {getattr(params, 'price_per_sqm', 0):,.0f}"
+                        if getattr(params, "price_per_sqm", None)
+                        else "N/A",
                         "Surface": f"{getattr(params, 'sqm', 'N/A')} sqm",
                         "Bedrooms": getattr(params, "bedrooms", "N/A"),
                         "Bathrooms": getattr(params, "bathrooms", "N/A"),
                         "Floor": getattr(params, "floor", "N/A"),
                         "Energy Class": getattr(params, "energy_class", "N/A"),
                         "Elevator": "✅ Yes" if getattr(params, "has_elevator", None) else "❌ No",
-                        "Barrier Free": "✅ Yes" if not getattr(params, "has_architectural_barriers", True) else "❌ No",
+                        "Barrier Free": "✅ Yes"
+                        if not getattr(params, "has_architectural_barriers", True)
+                        else "❌ No",
                     }
                     for label, value in spec_items.items():
                         st.markdown(f"**{label}:** {value}")
@@ -314,26 +320,37 @@ if start_analysis:
                     with c1:
                         # Pie Chart for Loan vs Down Payment
                         loan_amt = price - float(down_payment)
-                        fig = go.Figure(data=[go.Pie(
-                            labels=['Down Payment', 'Loan Amount'],
-                            values=[float(down_payment), loan_amt],
-                            hole=.4,
-                            marker_colors=['#0F52BA', '#E2E8F0']
-                        )])
+                        fig = go.Figure(
+                            data=[
+                                go.Pie(
+                                    labels=["Down Payment", "Loan Amount"],
+                                    values=[float(down_payment), loan_amt],
+                                    hole=0.4,
+                                    marker_colors=["#0F52BA", "#E2E8F0"],
+                                )
+                            ]
+                        )
                         fig.update_layout(
                             showlegend=True,
                             margin={"t": 0, "b": 0, "l": 0, "r": 0},
                             height=300,
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            font={"color": "#F8FAFC"}
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font={"color": "#F8FAFC"},
                         )
                         st.plotly_chart(fig, use_container_width=True)
 
                     with c2:
-                        st.info(f"**Original Installment**\n\n€ {fin.get('original_installment', 0):,.2f}")
-                        st.success(f"**Target Installment (-{fin.get('discount_percentage', 0)}%)**\n\n€ {fin.get('discounted_installment', 0):,.2f}")
-                        st.metric("Savings / Month", f"€ {fin.get('original_installment', 0) - fin.get('discounted_installment', 0):,.2f}")
+                        st.info(
+                            f"**Original Installment**\n\n€ {fin.get('original_installment', 0):,.2f}"
+                        )
+                        st.success(
+                            f"**Target Installment (-{fin.get('discount_percentage', 0)}%)**\n\n€ {fin.get('discounted_installment', 0):,.2f}"
+                        )
+                        st.metric(
+                            "Savings / Month",
+                            f"€ {fin.get('original_installment', 0) - fin.get('discounted_installment', 0):,.2f}",
+                        )
 
             with tab_neigh:
                 st.markdown("### Neighborhood Insights")
@@ -341,35 +358,46 @@ if start_analysis:
                     col_chart, col_data = st.columns([1, 1])
                     with col_chart:
                         # Radar Chart for Scores
-                        df = pd.DataFrame({
-                            "r": [
-                                (getattr(osint, 'safety_score', 0) + 1) * 50,
-                                getattr(osint, 'amenities_score', 0) * 100,
-                                getattr(osint, 'public_transport_score', 0) * 100,
-                                (getattr(osint, 'noise_level', 0) + 1) * 50
-                            ],
-                            "theta": ['Safety', 'Amenities', 'Transport', 'Quietness']
-                        })
-                        fig = px.line_polar(df, r='r', theta='theta', line_close=True)
-                        fig.update_traces(fill='toself', line_color='#38BDF8')
+                        df = pd.DataFrame(
+                            {
+                                "r": [
+                                    (getattr(osint, "safety_score", 0) + 1) * 50,
+                                    getattr(osint, "amenities_score", 0) * 100,
+                                    getattr(osint, "public_transport_score", 0) * 100,
+                                    (getattr(osint, "noise_level", 0) + 1) * 50,
+                                ],
+                                "theta": ["Safety", "Amenities", "Transport", "Quietness"],
+                            }
+                        )
+                        fig = px.line_polar(df, r="r", theta="theta", line_close=True)
+                        fig.update_traces(fill="toself", line_color="#38BDF8")
                         fig.update_layout(
                             polar={
-                                "radialaxis": {"visible": True, "range": [0, 100], "gridcolor": "#334155", "labelalias": {}},
-                                "angularaxis": {"gridcolor": "#334155", "linecolor": "#334155"}
+                                "radialaxis": {
+                                    "visible": True,
+                                    "range": [0, 100],
+                                    "gridcolor": "#334155",
+                                    "labelalias": {},
+                                },
+                                "angularaxis": {"gridcolor": "#334155", "linecolor": "#334155"},
                             },
                             showlegend=False,
                             margin={"t": 40, "b": 40, "l": 40, "r": 40},
                             height=300,
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            font={"color": "#F8FAFC"}
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font={"color": "#F8FAFC"},
                         )
                         st.plotly_chart(fig, use_container_width=True)
 
                     with col_data:
                         st.markdown(f"**Connectivity:** {getattr(osint, 'broadband_type', 'N/A')}")
-                        st.markdown(f"**Points of Interest:** {getattr(osint, 'poi_count', 'N/A')} nearby")
-                        st.markdown(f"**Commute Distance:** {getattr(commute, 'distance_km', 'N/A')} km")
+                        st.markdown(
+                            f"**Points of Interest:** {getattr(osint, 'poi_count', 'N/A')} nearby"
+                        )
+                        st.markdown(
+                            f"**Commute Distance:** {getattr(commute, 'distance_km', 'N/A')} km"
+                        )
                 else:
                     st.write("No neighborhood data available.")
 
@@ -380,5 +408,7 @@ if start_analysis:
                 else:
                     st.markdown("### Negotiation Strategy")
                     # Convert markdown to HTML before injecting into the styled div
-                    email_html = markdown.markdown(email_md, extensions=['extra', 'nl2br'])
-                    st.markdown(f'<div class="report-box">{email_html}</div>', unsafe_allow_html=True)
+                    email_html = markdown.markdown(email_md, extensions=["extra", "nl2br"])
+                    st.markdown(
+                        f'<div class="report-box">{email_html}</div>', unsafe_allow_html=True
+                    )

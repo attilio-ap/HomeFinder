@@ -10,7 +10,7 @@ a LangGraph StateGraph.
 import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, cast
 
 import httpx
 from langchain_core.prompts import ChatPromptTemplate
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # --- Helper to extract string from AIMessage content ---
 def _extract_text_content(content: Any) -> str:
     """Helper to consistently extract text from Langchain message content.
-    
+
     Handles strings, lists of blocks (Claude/Gemini), and fallback to string conversion.
     """
     if not content:
@@ -64,30 +64,25 @@ def get_llm(model: str = DEFAULT_LITE_MODEL, temperature: float = 0) -> Any:
         BaseChatModel: An instance of a LangChain chat model.
     """
     model_lower = model.lower()
-    
+
     # 1. Google Gemini
     if "gemini" in model_lower:
         from langchain_google_genai import ChatGoogleGenerativeAI
+
         return ChatGoogleGenerativeAI(
-            model=model,
-            temperature=temperature,
-            max_retries=3,
-            timeout=30.0
+            model=model, temperature=temperature, max_retries=3, timeout=30.0
         )
-    
+
     # 2. Anthropic Claude
     if "claude" in model_lower:
         from langchain_anthropic import ChatAnthropic
-        return ChatAnthropic(
-            model=model,
-            temperature=temperature,
-            max_retries=3,
-            timeout=30.0
-        )
-        
+
+        return ChatAnthropic(model=model, temperature=temperature, max_retries=3, timeout=30.0)
+
     # 3. Moonshot / Kimi (OpenAI Compatible)
     if "moonshot" in model_lower or "kimi" in model_lower:
         from langchain_openai import ChatOpenAI
+
         api_key = os.getenv("MOONSHOT_API_KEY")
         return ChatOpenAI(
             model=model,
@@ -95,51 +90,64 @@ def get_llm(model: str = DEFAULT_LITE_MODEL, temperature: float = 0) -> Any:
             openai_api_key=api_key,
             openai_api_base="https://api.moonshot.cn/v1",
             max_retries=3,
-            timeout=30.0
+            timeout=30.0,
         )
-        
+
     # 4. OpenAI GPT
     if "gpt" in model_lower:
         from langchain_openai import ChatOpenAI
-        return ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            max_retries=3,
-            timeout=30.0
-        )
+
+        return ChatOpenAI(model=model, temperature=temperature, max_retries=3, timeout=30.0)
 
     # Fallback to Google as default if unknown
     from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(
-        model=model,
-        temperature=temperature,
-        max_retries=3,
-        timeout=30.0
-    )
+
+    return ChatGoogleGenerativeAI(model=model, temperature=temperature, max_retries=3, timeout=30.0)
 
 
 def handle_llm_error(e: Exception, agent_name: str) -> str:
     """Transforms raw LLM errors into polished, user-friendly messages."""
     error_str = str(e).lower()
-    
+
     # Rate Limiting / Quota / Overload
-    if any(err in error_str for err in ["429", "resource_exhausted", "rate_limit", "quota", "overloaded", "busy"]):
+    if any(
+        err in error_str
+        for err in ["429", "resource_exhausted", "rate_limit", "quota", "overloaded", "busy"]
+    ):
         return "⚠️ The AI service is currently at capacity or you have reached your quota. Please wait a few seconds and try again."
-    
+
     # Model Not Found / Version Issues
     if any(err in error_str for err in ["404", "not_found", "not found"]):
         return f"❌ Model error: The selected AI model is not available or its name is incorrect. (Agent: {agent_name})"
 
     # Authentication / Configuration / Billing
-    if any(err in error_str for err in ["401", "invalid_argument", "unauthorized", "api_key", "invalid_api_key", "insufficient_quota", "billing", "payment"]):
+    if any(
+        err in error_str
+        for err in [
+            "401",
+            "invalid_argument",
+            "unauthorized",
+            "api_key",
+            "invalid_api_key",
+            "insufficient_quota",
+            "billing",
+            "payment",
+        ]
+    ):
         return "🔑 Configuration or Billing error: Please check your API keys, project settings, or billing status."
-    
+
     # Timeouts
-    if any(err in error_str for err in ["timeout", "deadline_exceeded", "request_timeout", "connection_error"]):
+    if any(
+        err in error_str
+        for err in ["timeout", "deadline_exceeded", "request_timeout", "connection_error"]
+    ):
         return "🕒 The analysis is taking longer than expected or there's a connection issue. Please try again in a moment."
-    
+
     # Safety filters / Content Blocking
-    if any(err in error_str for err in ["safety", "blocked", "content_filter", "flagged", "sensitive", "harmful"]):
+    if any(
+        err in error_str
+        for err in ["safety", "blocked", "content_filter", "flagged", "sensitive", "harmful"]
+    ):
         return "🛡️ The content was flagged by safety filters or is restricted by the provider. Please try with a different listing."
 
     logger.error(f"[{agent_name}] Unexpected error: {e}", exc_info=True)
@@ -359,7 +367,7 @@ async def data_extractor_node(state: PropertyState) -> dict:
         return {
             "extracted_parameters": None,
             "hard_constraints_met": False,
-            "evaluation_report": error_msg
+            "evaluation_report": error_msg,
         }
 
 
