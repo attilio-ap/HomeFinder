@@ -126,6 +126,10 @@ def handle_llm_error(e: Exception, agent_name: str) -> str:
     if any(err in error_str for err in ["429", "resource_exhausted", "rate_limit", "quota", "overloaded", "busy"]):
         return "⚠️ The AI service is currently at capacity or you have reached your quota. Please wait a few seconds and try again."
     
+    # Model Not Found / Version Issues
+    if any(err in error_str for err in ["404", "not_found", "not found"]):
+        return f"❌ Model error: The selected AI model is not available or its name is incorrect. (Agent: {agent_name})"
+
     # Authentication / Configuration / Billing
     if any(err in error_str for err in ["401", "invalid_argument", "unauthorized", "api_key", "invalid_api_key", "insufficient_quota", "billing", "payment"]):
         return "🔑 Configuration or Billing error: Please check your API keys, project settings, or billing status."

@@ -258,15 +258,15 @@ if start_analysis:
             <div class="metric-container">
                 <div class="metric-card">
                     <div class="metric-label">Investment Score</div>
-                    <div class="metric-value" style="color: #0F52BA;">{score}/100</div>
+                    <div class="metric-value" style="color: #38BDF8;">{score}/100</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Asking Price</div>
-                    <div class="metric-value">€ {price:,.0f}</div>
+                    <div class="metric-value" style="color: #F8FAFC;">€ {price:,.0f}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Commute</div>
-                    <div class="metric-value">{time}</div>
+                    <div class="metric-value" style="color: #F8FAFC;">{time}</div>
                 </div>
             </div>
             """,
@@ -325,7 +325,8 @@ if start_analysis:
                             margin={"t": 0, "b": 0, "l": 0, "r": 0},
                             height=300,
                             paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)'
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font={"color": "#F8FAFC"}
                         )
                         st.plotly_chart(fig, use_container_width=True)
 
@@ -350,14 +351,18 @@ if start_analysis:
                             "theta": ['Safety', 'Amenities', 'Transport', 'Quietness']
                         })
                         fig = px.line_polar(df, r='r', theta='theta', line_close=True)
-                        fig.update_traces(fill='toself', line_color='#0F52BA')
+                        fig.update_traces(fill='toself', line_color='#38BDF8')
                         fig.update_layout(
-                            polar={"radialaxis": {"visible": True, "range": [0, 100]}},
+                            polar={
+                                "radialaxis": {"visible": True, "range": [0, 100], "gridcolor": "#334155", "labelalias": {}},
+                                "angularaxis": {"gridcolor": "#334155", "linecolor": "#334155"}
+                            },
                             showlegend=False,
                             margin={"t": 40, "b": 40, "l": 40, "r": 40},
                             height=300,
                             paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)'
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font={"color": "#F8FAFC"}
                         )
                         st.plotly_chart(fig, use_container_width=True)
 
