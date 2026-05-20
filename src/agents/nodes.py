@@ -14,7 +14,7 @@ from typing import Any, Dict, cast
 
 import httpx
 from langchain_core.prompts import ChatPromptTemplate
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from src.core.config import DEFAULT_LITE_MODEL, DEFAULT_PRO_MODEL, benchmark_price, benchmark_sqm
@@ -77,18 +77,23 @@ def get_llm(model: str = DEFAULT_LITE_MODEL, temperature: float = 0) -> Any:
     if "claude" in model_lower:
         from langchain_anthropic import ChatAnthropic
 
-        return ChatAnthropic(model=model, temperature=temperature, max_retries=3, timeout=30.0)
+        return ChatAnthropic(
+            model_name=model,
+            temperature=temperature,
+            max_retries=3,
+            timeout=30.0,
+        )  # type: ignore[call-arg]
 
     # 3. Moonshot / Kimi (OpenAI Compatible)
     if "moonshot" in model_lower or "kimi" in model_lower:
         from langchain_openai import ChatOpenAI
 
-        api_key = os.getenv("MOONSHOT_API_KEY")
+        moonshot_api_key = os.getenv("MOONSHOT_API_KEY")
         return ChatOpenAI(
             model=model,
             temperature=temperature,
-            openai_api_key=api_key,
-            openai_api_base="https://api.moonshot.cn/v1",
+            api_key=SecretStr(moonshot_api_key) if moonshot_api_key else None,
+            base_url="https://api.moonshot.cn/v1",
             max_retries=3,
             timeout=30.0,
         )
